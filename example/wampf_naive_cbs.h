@@ -90,7 +90,7 @@ class NaiveACBSImplementation {
       goal_state.emplace_back(GetState(idx, goal_idx));
     }
 
-    w->env_view_.UpdateGoals(goal_state);
+    w->env_view_.updateGoals(goal_state);
 
     std::vector<PlanResult<naive_cbs_wampf_impl::CBSState,
                            naive_cbs_wampf_impl::CBSAction, int>>

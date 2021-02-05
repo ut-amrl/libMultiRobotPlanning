@@ -46,27 +46,27 @@ able to search on the low-level while taking the constraints into account.
 \param Task Custom task type to be used for assignment.
 \tparam Environment This class needs to provide the custom logic. In particular,
 it needs to support the following functions:
-  - `void SetLowLevelContext(size_t agentIdx, const Constraints* constraints)`\n
+  - `void setLowLevelContext(size_t agentIdx, const Constraints* constraints)`\n
     Set the current context to a particular agent with the given set of
 constraints
 
-  - `Cost AdmissibleHeuristic(const State& s)`\n
+  - `Cost admissibleHeuristic(const State& s)`\n
     Admissible heuristic. Needs to take current context into account.
 
-  - `bool IsSolution(const State& s)`\n
+  - `bool isSolution(const State& s)`\n
     Return true if the given state is a goal state for the current agent.
 
-  - `void GetNeighbors(const State& s, std::vector<Neighbor<State, Action, int>
+  - `void getNeighbors(const State& s, std::vector<Neighbor<State, Action, int>
 >& neighbors)`\n
     Fill the list of neighboring state for the given state s and the current
 agent.
 
-  - `bool GetFirstConflict(const std::vector<PlanResult<State, Action, int> >&
+  - `bool getFirstConflict(const std::vector<PlanResult<State, Action, int> >&
 solution, Conflict& result)`\n
     Finds the first conflict for the given solution for each agent. Return true
 if a conflict was found and false otherwise.
 
-  - `void CreateConstraintsFromConflict(const Conflict& conflict,
+  - `void createConstraintsFromConflict(const Conflict& conflict,
 std::map<size_t, Constraints>& constraints)`\n
     Create a list of constraints for the given conflict.
 
@@ -133,7 +133,7 @@ class CBSTA {
       open.pop();
 
       Conflict conflict;
-      if (!m_env.GetFirstConflict(P.solution, conflict)) {
+      if (!m_env.getFirstConflict(P.solution, conflict)) {
         std::cout << "done; cost: " << P.cost << std::endl;
         solution = P.solution;
         return true;
@@ -177,7 +177,7 @@ class CBSTA {
       // conflict.type << std::endl;
 
       std::map<size_t, Constraints> constraints;
-      m_env.CreateConstraintsFromConflict(conflict, constraints);
+      m_env.createConstraintsFromConflict(conflict, constraints);
       for (const auto& c : constraints) {
         // std::cout << "Add HL node for " << c.first << std::endl;
         size_t i = c.first;
@@ -267,18 +267,18 @@ class CBSTA {
     // , m_agentIdx(agentIdx)
     // , m_constraints(constraints)
     {
-      m_env.SetLowLevelContext(agentIdx, &constraints, task);
+      m_env.setLowLevelContext(agentIdx, &constraints, task);
     }
 
     Cost admissibleHeuristic(const State& s) {
-      return m_env.AdmissibleHeuristic(s);
+      return m_env.admissibleHeuristic(s);
     }
 
-    bool isSolution(const State& s) { return m_env.IsSolution(s); }
+    bool isSolution(const State& s) { return m_env.isSolution(s); }
 
     void getNeighbors(const State& s,
                       std::vector<Neighbor<State, Action, Cost> >& neighbors) {
-      m_env.GetNeighbors(s, neighbors);
+      m_env.getNeighbors(s, neighbors);
     }
 
     void onExpandNode(const State& s, Cost fScore, Cost gScore) {

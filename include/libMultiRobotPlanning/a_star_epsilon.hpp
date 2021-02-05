@@ -46,7 +46,7 @@ default. Define "USE_FIBONACCI_HEAP" to use the fibonacci heap instead.
 \tparam Cost Custom Cost type (integer or floating point types)
 \tparam Environment This class needs to provide the custom logic. In
     particular, it needs to support the following functions:
-  - `Cost AdmissibleHeuristic(const State& s)`\n
+  - `Cost admissibleHeuristic(const State& s)`\n
     This function can return 0 if no suitable heuristic is available.
 
   - `Cost focalStateHeuristic(const State& s, Cost gScore)`\n
@@ -58,10 +58,10 @@ gScoreS1, Cost gScoreS2)`\n
     This function computes a (potentially inadmissible) heuristic for the given
 state transition.
 
-  - `bool IsSolution(const State& s)`\n
+  - `bool isSolution(const State& s)`\n
     Return true if the given state is a goal state.
 
-  - `void GetNeighbors(const State& s, std::vector<Neighbor<State, Action,
+  - `void getNeighbors(const State& s, std::vector<Neighbor<State, Action,
    int> >& neighbors)`\n
     Fill the list of neighboring state for the given state s.
 
@@ -100,7 +100,7 @@ class AStarEpsilon {
         cameFrom;
 
     auto handle = openSet.push(
-        Node(startState, m_env.AdmissibleHeuristic(startState), 0, 0));
+        Node(startState, m_env.admissibleHeuristic(startState), 0, 0));
     stateToHeap.insert(std::make_pair<>(startState, handle));
     (*handle).handle = handle;
 
@@ -192,7 +192,7 @@ class AStarEpsilon {
       Node current = *currentHandle;
       m_env.onExpandNode(current.state, current.fScore, current.gScore);
 
-      if (m_env.IsSolution(current.state)) {
+      if (m_env.isSolution(current.state)) {
         solution.states.clear();
         solution.actions.clear();
         auto iter = cameFrom.find(current.state);
@@ -219,7 +219,7 @@ class AStarEpsilon {
 
       // traverse neighbors
       neighbors.clear();
-      m_env.GetNeighbors(current.state, neighbors);
+      m_env.getNeighbors(current.state, neighbors);
       for (const Neighbor<State, Action, Cost>& neighbor : neighbors) {
         if (closedSet.find(neighbor.state) == closedSet.end()) {
           Cost tentative_gScore = current.gScore + neighbor.cost;
@@ -227,7 +227,7 @@ class AStarEpsilon {
           if (iter == stateToHeap.end()) {  // Discover a new node
             // std::cout << "  this is a new node" << std::endl;
             Cost fScore =
-                tentative_gScore + m_env.AdmissibleHeuristic(neighbor.state);
+                tentative_gScore + m_env.admissibleHeuristic(neighbor.state);
             Cost focalHeuristic =
                 current.focalHeuristic +
                 m_env.focalStateHeuristic(neighbor.state, tentative_gScore) +

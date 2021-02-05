@@ -43,13 +43,13 @@ default. Define "USE_FIBONACCI_HEAP" to use the fibonacci heap instead.
 \tparam Cost Custom Cost type (integer or floating point types)
 \tparam Environment This class needs to provide the custom A* logic. In
     particular, it needs to support the following functions:
-  - `Cost AdmissibleHeuristic(const State& s)`\n
+  - `Cost admissibleHeuristic(const State& s)`\n
     This function can return 0 if no suitable heuristic is available.
 
-  - `bool IsSolution(const State& s)`\n
+  - `bool isSolution(const State& s)`\n
     Return true if the given state is a goal state.
 
-  - `void GetNeighbors(const State& s, std::vector<Neighbor<State, Action,
+  - `void getNeighbors(const State& s, std::vector<Neighbor<State, Action,
    int> >& neighbors)`\n
     Fill the list of neighboring state for the given state s.
 
@@ -173,17 +173,17 @@ class SIPP {
     SIPPEnvironment(Environment& env) : m_env(env) {}
 
     Cost admissibleHeuristic(const SIPPState& s) {
-      return m_env.AdmissibleHeuristic(s.state);
+      return m_env.admissibleHeuristic(s.state);
     }
 
     bool mightHaveSolution(const State& goal) {
       const auto& si = safeIntervals(m_env.getLocation(goal));
-      return m_env.IsSolution(goal) && !si.empty() &&
+      return m_env.isSolution(goal) && !si.empty() &&
              si.back().end == std::numeric_limits<Cost>::max();
     }
 
     bool isSolution(const SIPPState& s) {
-      return m_env.IsSolution(s.state) &&
+      return m_env.isSolution(s.state) &&
              safeIntervals(m_env.getLocation(s.state)).at(s.interval).end ==
                  std::numeric_limits<Cost>::max();
     }
@@ -192,7 +192,7 @@ class SIPP {
         const SIPPState& s,
         std::vector<Neighbor<SIPPState, SIPPAction, Cost> >& neighbors) {
       std::vector<Neighbor<State, Action, Cost> > motions;
-      m_env.GetNeighbors(s.state, motions);
+      m_env.getNeighbors(s.state, motions);
       for (const auto& m : motions) {
         // std::cout << "gN " << m.state << std::endl;
         Cost m_time = m.cost;
@@ -228,7 +228,7 @@ class SIPP {
       // std::cout << "expand: " << s.state << "," << interval.start << " to "
       // << interval.end << "(g: " << gScore << " f: " << fScore << ")" <<
       // std::endl;
-      // This is called before GetNeighbors(). We use the callback to find the
+      // This is called before getNeighbors(). We use the callback to find the
       // current cost (=time) of the expanded node
       m_lastGScore = gScore;
       m_env.onExpandNode(s.state, fScore, gScore);

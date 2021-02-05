@@ -251,11 +251,11 @@ public:
   Location min_pos_;       //let view own
   Location max_pos_;
 
-  Environment *GetEnvPtr() const {
+  Environment *getEnvPtr() const {
     return env_;
   }
 
-  void UpdateGoals(std::vector<Location> goals) {
+  void updateGoals(std::vector<Location> goals) {
     goals_ = std::move(goals);
   }
 
@@ -272,13 +272,13 @@ public:
           min_pos_(min_pos),
           max_pos_(max_pos) {}
 
-  int AdmissibleHeuristic(const CBSState &s) {
+  int admissibleHeuristic(const CBSState &s) {
     return std::abs(s.x - goals_[agentIdx_].x) +
            std::abs(s.y - goals_[agentIdx_].y);
   }
 
   void
-  SetLowLevelContext(size_t agentIdx, const Constraints *constraints) {
+  setLowLevelContext(size_t agentIdx, const Constraints *constraints) {
     assert(constraints);  // NOLINT
     agentIdx_ = agentIdx;
     constraints_ = constraints;
@@ -290,13 +290,13 @@ public:
     }
   }
 
-  bool IsSolution(const CBSState &s) {
+  bool isSolution(const CBSState &s) {
     return s.x == goals_[agentIdx_].x && s.y == goals_[agentIdx_].y &&
            s.time > lastGoalConstraint_;
   }
 
   // check if neighbors are inside the current window, if not, throw them out TODO
-  void GetNeighbors(const CBSState &s,
+  void getNeighbors(const CBSState &s,
                     std::vector<Neighbor<CBSState, CBSAction, int> > &neighbors) {
     neighbors.clear();
     {
@@ -340,16 +340,16 @@ public:
     }
   }
 
-  bool GetFirstConflict(
+  bool getFirstConflict(
           const std::vector<PlanResult<CBSState, CBSAction, int> > &solution,
           Conflict &result) {
-    return env_->GetFirstConflict(solution, result);
+    return env_->getFirstConflict(solution, result);
   }
 
   void createConstraintsFromConflict(
           const Conflict &conflict,
           std::map<size_t, Constraints> &constraints) {
-    env_->CreateConstraintsFromConflict(conflict, constraints);
+    env_->createConstraintsFromConflict(conflict, constraints);
   }
 
   void onExpandHighLevelNode(int /*cost*/) { highLevelExpanded_++; }
@@ -391,7 +391,7 @@ public:
   NaiveCBSEnvironment &operator=(const NaiveCBSEnvironment &) = delete;
 
 
-  bool GetFirstConflict(
+  bool getFirstConflict(
           const std::vector<PlanResult<CBSState, CBSAction, int> > &solution,
           Conflict &result) {
     int max_t = 0;
@@ -442,7 +442,7 @@ public:
     return false;
   }
 
-  void CreateConstraintsFromConflict(
+  void createConstraintsFromConflict(
           const Conflict &conflict,
           std::map<size_t, Constraints> &constraints) {
     if (conflict.type == Conflict::Vertex) {

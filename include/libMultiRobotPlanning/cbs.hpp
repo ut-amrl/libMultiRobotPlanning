@@ -54,7 +54,7 @@ class CBS {
       open.pop();
 
       Conflict conflict;
-      if (!m_env.GetFirstConflict(P.solution, conflict)) {
+      if (!m_env.getFirstConflict(P.solution, conflict)) {
         std::cout << "done; cost: " << P.cost << std::endl;
         solution = P.solution;
         return true;
@@ -66,7 +66,7 @@ class CBS {
       // conflict.type << std::endl;
 
       std::map<size_t, Constraints> constraints;
-      m_env.CreateConstraintsFromConflict(conflict, constraints);
+      m_env.createConstraintsFromConflict(conflict, constraints);
       for (const auto& c : constraints) {
         // std::cout << "Add HL node for " << c.first << std::endl;
         size_t i = c.first;
@@ -143,18 +143,18 @@ class CBS {
     // , m_agentIdx(agentIdx)
     // , m_constraints(constraints)
     {
-      m_env.SetLowLevelContext(agentIdx, &constraints);
+      m_env.setLowLevelContext(agentIdx, &constraints);
     }
 
     Cost admissibleHeuristic(const State& s) {
-      return m_env.AdmissibleHeuristic(s);
+      return m_env.admissibleHeuristic(s);
     }
 
-    bool isSolution(const State& s) { return m_env.IsSolution(s); }
+    bool isSolution(const State& s) { return m_env.isSolution(s); }
 
     void getNeighbors(const State& s,
                       std::vector<Neighbor<State, Action, Cost> >& neighbors) {
-      m_env.GetNeighbors(s, neighbors);
+      m_env.getNeighbors(s, neighbors);
     }
 
     void onExpandNode(const State& s, Cost fScore, Cost gScore) {

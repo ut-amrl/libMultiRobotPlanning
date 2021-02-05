@@ -43,8 +43,8 @@ struct Window {
   void operator=(const Window& other) {}
 
   bool operator==(const Window& other) const {
-    return (env_view_.min_pos_ == other.min_pos_) &&
-           (env_view_.max_pos_ == other.max_pos_) &&
+    return (env_view_.min_pos_ == other.env_view_.min_pos_) &&
+           (env_view_.max_pos_ == other.env_view_.max_pos_) &&
            (agent_idxs_ == other.agent_idxs_);
   }
 
@@ -90,11 +90,11 @@ struct Window {
       return true;
     }
 
-    State other_off1(other.min_pos_.x, other.max_pos_.y);
-    State other_off2(other.max_pos_.x, other.min_pos_.y);
+    State other_off1(other.env_view_.min_pos_.x, other.env_view_.max_pos_.y);
+    State other_off2(other.env_view_.max_pos_.x, other.env_view_.min_pos_.y);
 
     // Check if their four corners are inside our box.
-    if (Contains(other.min_pos_) || Contains(other.max_pos_) ||
+    if (Contains(other.env_view_.min_pos_) || Contains(other.env_view_.max_pos_) ||
         Contains(other_off1) || Contains(other_off2)) {
       return true;
     }
@@ -122,17 +122,17 @@ struct Window {
     }
 
     // Inflating their box is equivalent to inflating our box.
-    State other_min_growth(other.min_pos_.x - kRadiusGrowth,
-                           other.min_pos_.y - kRadiusGrowth);
-    State other_max_growth(other.max_pos_.x + kRadiusGrowth,
-                           other.max_pos_.y + kRadiusGrowth);
-    State other_off1(other.min_pos_.x - kRadiusGrowth,
-                     other.max_pos_.y + kRadiusGrowth);
-    State other_off2(other.max_pos_.x + kRadiusGrowth,
-                     other.min_pos_.y - kRadiusGrowth);
+    State other_min_growth(other.env_view_.min_pos_.x - kRadiusGrowth,
+                           other.env_view_.min_pos_.y - kRadiusGrowth);
+    State other_max_growth(other.env_view_.max_pos_.x + kRadiusGrowth,
+                           other.env_view_.max_pos_.y + kRadiusGrowth);
+    State other_off1(other.env_view_.min_pos_.x - kRadiusGrowth,
+                     other.env_view_.max_pos_.y + kRadiusGrowth);
+    State other_off2(other.env_view_.max_pos_.x + kRadiusGrowth,
+                     other.env_view_.min_pos_.y - kRadiusGrowth);
 
     // Check if their four corners are inside our box.
-    if (Contains(other.min_pos_) || Contains(other.max_pos_) ||
+    if (Contains(other.env_view_.min_pos_) || Contains(other.env_view_.max_pos_) ||
         Contains(other_off1) || Contains(other_off2)) {
       return true;
     }
@@ -149,10 +149,10 @@ struct Window {
   bool ShouldQuit() const { return false; }
 
   Window Merge(const Window& o) const {
-    int min_x = std::min(env_view_.min_pos_.x, o.min_pos_.x);
-    int max_x = std::max(env_view_.max_pos_.x, o.max_pos_.x);
-    int min_y = std::min(env_view_.min_pos_.y, o.min_pos_.y);
-    int max_y = std::max(env_view_.max_pos_.y, o.max_pos_.y);
+    int min_x = std::min(env_view_.min_pos_.x, o.env_view_.min_pos_.x);
+    int max_x = std::max(env_view_.max_pos_.x, o.env_view_.max_pos_.x);
+    int min_y = std::min(env_view_.min_pos_.y, o.env_view_.min_pos_.y);
+    int max_y = std::max(env_view_.max_pos_.y, o.env_view_.max_pos_.y);
 
     auto joined_agent_idxs = agent_idxs_;
     joined_agent_idxs.insert(joined_agent_idxs.end(), o.agent_idxs_.begin(),
@@ -166,7 +166,7 @@ struct Window {
     return {{min_x, min_y},
             {max_x, max_y},
             joined_agent_idxs,
-            env_view_.GetEnvPtr()};
+            env_view_.getEnvPtr()};
   }
 };
 

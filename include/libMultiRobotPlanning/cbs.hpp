@@ -10,7 +10,12 @@ template <typename State, typename Action, typename Cost, typename Conflict,
           typename Constraints, typename Environment>
 class CBS {
  public:
-  CBS(Environment& environment) : m_env(environment) {}
+  explicit CBS(Environment* environment) : m_env(environment) {}
+  CBS(const CBS&) = default;
+  CBS(CBS&&) = default;
+
+  CBS& operator=(const CBS&) = default;
+  CBS& operator=(CBS&&) = default;
 
   bool search(const std::vector<State>& initialStates,
               std::vector<PlanResult<State, Action, Cost> >& solution) {
@@ -48,13 +53,13 @@ class CBS {
     int id = 1;
     while (!open.empty()) {
       HighLevelNode P = open.top();
-      m_env.onExpandHighLevelNode(P.cost);
+      m_env->onExpandHighLevelNode(P.cost);
       // std::cout << "expand: " << P << std::endl;
 
       open.pop();
 
       Conflict conflict;
-      if (!m_env.getFirstConflict(P.solution, conflict)) {
+      if (!m_env->getFirstConflict(P.solution, conflict)) {
         std::cout << "done; cost: " << P.cost << std::endl;
         solution = P.solution;
         return true;
@@ -66,7 +71,7 @@ class CBS {
       // conflict.type << std::endl;
 
       std::map<size_t, Constraints> constraints;
-      m_env.createConstraintsFromConflict(conflict, constraints);
+      m_env->createConstraintsFromConflict(conflict, constraints);
       for (const auto& c : constraints) {
         // std::cout << "Add HL node for " << c.first << std::endl;
         size_t i = c.first;
@@ -137,29 +142,29 @@ class CBS {
   };
 
   struct LowLevelEnvironment {
-    LowLevelEnvironment(Environment& env, size_t agentIdx,
+    LowLevelEnvironment(Environment* env, size_t agentIdx,
                         const Constraints& constraints)
         : m_env(env)
     // , m_agentIdx(agentIdx)
     // , m_constraints(constraints)
     {
-      m_env.setLowLevelContext(agentIdx, &constraints);
+      m_env->setLowLevelContext(agentIdx, &constraints);
     }
 
     Cost admissibleHeuristic(const State& s) {
-      return m_env.admissibleHeuristic(s);
+      return m_env->admissibleHeuristic(s);
     }
 
-    bool isSolution(const State& s) { return m_env.isSolution(s); }
+    bool isSolution(const State& s) { return m_env->isSolution(s); }
 
     void getNeighbors(const State& s,
                       std::vector<Neighbor<State, Action, Cost> >& neighbors) {
-      m_env.getNeighbors(s, neighbors);
+      m_env->getNeighbors(s, neighbors);
     }
 
     void onExpandNode(const State& s, Cost fScore, Cost gScore) {
       // std::cout << "LL expand: " << s << std::endl;
-      m_env.onExpandLowLevelNode(s, fScore, gScore);
+      m_env->onExpandLowLevelNode(s, fScore, gScore);
     }
 
     void onDiscover(const State& /*s*/, Cost /*fScore*/, Cost /*gScore*/) {
@@ -168,13 +173,13 @@ class CBS {
     }
 
    private:
-    Environment& m_env;
+    Environment* m_env;
     // size_t m_agentIdx;
     // const Constraints& m_constraints;
   };
 
  private:
-  Environment& m_env;
+  Environment* m_env;
   typedef AStar<State, Action, Cost, LowLevelEnvironment> LowLevelSearch_t;
 };
 

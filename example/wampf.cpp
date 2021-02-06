@@ -13,6 +13,7 @@
 
 #include "wampf_individual.h"
 #include "wampf_naive_cbs.h"
+#include "wampf_naive_cbs_env.h"
 #include "wampf_state.h"
 #include "wampf_window.h"
 
@@ -23,7 +24,12 @@ using libMultiRobotPlanning::Neighbor;
 using libMultiRobotPlanning::PlanResult;
 using libMultiRobotPlanning::State;
 using wampf_impl::NaiveACBSImplementation;
-using Window = libMultiRobotPlanning::Window<>;
+
+using Env = naive_cbs_wampf_impl::NaiveCBSEnvironment<State>;
+using EnvView = naive_cbs_wampf_impl::EnvironmentView<
+    naive_cbs_wampf_impl::NaiveCBSEnvironment<State>, State>;
+
+using Window = libMultiRobotPlanning::Window<Env, EnvView>;
 
 using Cost = int;
 using JointState = std::vector<State>;

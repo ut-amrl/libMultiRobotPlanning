@@ -136,6 +136,40 @@ TEST(InsertShorterRepair, UpDownToStraight2) {
   VerifyPathIntegrity(result);
 }
 
+struct TestEnv {
+  TestEnv() = default;
+};
+struct TestEnvView {
+  State min_pos_;
+  State max_pos_;
+
+  TestEnvView() : min_pos_(0, 0), max_pos_(0, 0) {}
+  TestEnvView(libMultiRobotPlanning::State&, libMultiRobotPlanning::State&,
+              std::vector<libMultiRobotPlanning::State>, const TestEnv*)
+      : min_pos_(0, 0), max_pos_(0, 0) {}
+
+  TestEnvView(const TestEnvView&) = default;
+  TestEnvView(TestEnvView&&) = default;
+
+  TestEnvView& operator=(const TestEnvView&) = default;
+  TestEnvView& operator=(TestEnvView&&) = default;
+};
+
+using W = Window<TestEnv, TestEnvView, 1, 1>;
+
+TEST(WindowDefinition, OptionalAssignment) {
+  TestEnv env;
+  auto make_opt = [&env]() -> W {
+    W w(State(0, 3), std::vector<size_t>({0, 1}), &env);
+    //    std::optional<W> o(w);
+    return w;
+  };
+  //  std::optional<W>
+  W w_assign(State(0, 3), std::vector<size_t>({0, 1}), &env);
+  w_assign = make_opt();
+  //  EXPECT_TRUE(opt);
+}
+
 TEST(WindowIntersection, SimpleWindow) {
   PR p1;
   p1.states = {{{0, 0}, 0}, {{0, 1}, 1}, {{0, 2}, 2},
@@ -166,16 +200,23 @@ TEST(WindowIntersection, SimpleWindow) {
   p3.states = {{{0, 3}, 0}};
   p3.cost = 0;
   p3.fmin = 0;
-  //
-  //  using W = Window<1, 1>;
-  //
-  //  W w(/*State=*/{0, 3}, /*Indices=*/{0, 1});
-  //
-  //  EXPECT_EQ(w.max_pos_, State(1, 4));
-  //  EXPECT_EQ(w.min_pos_, State(-1, 2));
-  //
-  //  const auto res = GetWindowStartGoalIndexes<State, Action, W>({p1, p2, p3},
-  //  w); EXPECT_EQ(res.size(), 2); const auto expected1 = std::pair<int,
-  //  int>(2, 4); EXPECT_EQ(res.front(), expected1); const auto expected2 =
-  //  std::pair<int, int>(1, 3); EXPECT_EQ(res.back(), expected2);
+
+  TestEnv env;
+
+  W w(State(0, 3), std::vector<size_t>({0, 1}), &env);
+
+  W w_new = w;
+  W w_other = std::move(w_new);
+
+  EXPECT_TRUE(w_other.HasAgent(0));
+
+  EXPECT_EQ(w.env_view_.max_pos_, State(1, 4));
+  EXPECT_EQ(w.env_view_.min_pos_, State(-1, 2));
+
+  const auto res = GetWindowStartGoalIndexes<State, Action, W>({p1, p2, p3}, w);
+  EXPECT_EQ(res.size(), 2);
+  const auto expected1 = std::pair<int, int>(2, 4);
+  EXPECT_EQ(res.front(), expected1);
+  const auto expected2 = std::pair<int, int>(1, 3);
+  EXPECT_EQ(res.back(), expected2);
 }

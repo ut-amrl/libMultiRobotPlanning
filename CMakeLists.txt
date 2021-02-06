@@ -66,6 +66,7 @@ set(ALL_SOURCE_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/example/wampf_window.h
   ${CMAKE_CURRENT_SOURCE_DIR}/example/wampf_state.h
   ${CMAKE_CURRENT_SOURCE_DIR}/example/wampf_naive_cbs.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/example/wampf_naive_cbs_env.h
   ${CMAKE_CURRENT_SOURCE_DIR}/example/timer.hpp
 )
 

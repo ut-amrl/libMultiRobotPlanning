@@ -20,16 +20,19 @@ using libMultiRobotPlanning::IndividualSpaceEnvironment;
 using libMultiRobotPlanning::Neighbor;
 using libMultiRobotPlanning::PlanResult;
 using libMultiRobotPlanning::State;
-using Window = libMultiRobotPlanning::Window<>;
 
 using Cost = int;
 using JointState = std::vector<State>;
 using JointPath = std::vector<PlanResult<State, IndividualSpaceAction, Cost>>;
-using EnvType = naive_cbs_wampf_impl::NaiveCBSEnvironment<State>;
+using Env = naive_cbs_wampf_impl::NaiveCBSEnvironment<State>;
+using EnvView = naive_cbs_wampf_impl::EnvironmentView<
+    naive_cbs_wampf_impl::NaiveCBSEnvironment<State>, State>;
+
+using Window = libMultiRobotPlanning::Window<Env, EnvView>;
 
 class NaiveACBSImplementation {
  private:
-  EnvType env_;
+  Env env_;
   JointState start_;
   JointPath* path_;
 
@@ -52,7 +55,7 @@ class NaiveACBSImplementation {
       return {};
     }
     // todo: pass through environment view for new window creation
-    return {{std::move(res->first), std::move(res->second), env_}};
+    return {{std::move(res->first), std::move(res->second), &env_}};
   }
 
   std::pair<int, int> GetStartEndIndices(const Window& w) const {

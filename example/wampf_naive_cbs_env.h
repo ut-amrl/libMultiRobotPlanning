@@ -4,9 +4,9 @@
 
 #include <boost/functional/hash.hpp>
 
+#include <libMultiRobotPlanning/cbs.hpp>
 #include <libMultiRobotPlanning/neighbor.hpp>
 #include <libMultiRobotPlanning/planresult.hpp>
-#include <libMultiRobotPlanning/cbs.hpp>
 
 namespace naive_cbs_wampf_impl {
 
@@ -20,9 +20,7 @@ struct CBSState {
     return time == s.time && x == s.x && y == s.y;
   }
 
-  bool equalExceptTime(const CBSState &s) const {
-    return x == s.x && y == s.y;
-  }
+  bool equalExceptTime(const CBSState &s) const { return x == s.x && y == s.y; }
 
   friend std::ostream &operator<<(std::ostream &os, const CBSState &s) {
     return os << s.time << ": (" << s.x << "," << s.y << ")";
@@ -33,10 +31,10 @@ struct CBSState {
   int x;
   int y;
 };
-}
+}  // namespace naive_cbs_wampf_impl
 
 namespace std {
-template<>
+template <>
 struct hash<naive_cbs_wampf_impl::CBSState> {
   size_t operator()(const naive_cbs_wampf_impl::CBSState &s) const {
     size_t seed = 0;
@@ -57,9 +55,8 @@ enum class CBSAction {
   Wait,
 };
 
-
-std::ostream &
-operator<<(std::ostream &os, const naive_cbs_wampf_impl::CBSAction &a) {
+std::ostream &operator<<(std::ostream &os,
+                         const naive_cbs_wampf_impl::CBSAction &a) {
   switch (a) {
     case CBSAction::Up:
       os << "Up";
@@ -79,8 +76,7 @@ operator<<(std::ostream &os, const naive_cbs_wampf_impl::CBSAction &a) {
   }
   return os;
 }
-}
-
+}  // namespace naive_cbs_wampf_impl
 
 namespace naive_cbs_wampf_impl {
 struct Conflict {
@@ -104,14 +100,12 @@ struct Conflict {
       case Vertex:
         return os << c.time << ": Vertex(" << c.x1 << "," << c.y1 << ")";
       case Edge:
-        return os << c.time << ": Edge(" << c.x1 << "," << c.y1 << ","
-                  << c.x2
+        return os << c.time << ": Edge(" << c.x1 << "," << c.y1 << "," << c.x2
                   << "," << c.y2 << ")";
     }
     return os;
   }
 };
-
 
 struct VertexConstraint {
   VertexConstraint(int time, int x, int y) : time(time), x(x), y(y) {}
@@ -128,18 +122,16 @@ struct VertexConstraint {
     return std::tie(time, x, y) == std::tie(other.time, other.x, other.y);
   }
 
-  friend std::ostream &
-  operator<<(std::ostream &os, const VertexConstraint &c) {
+  friend std::ostream &operator<<(std::ostream &os, const VertexConstraint &c) {
     return os << "VC(" << c.time << "," << c.x << "," << c.y << ")";
   }
 };
-}
+}  // namespace naive_cbs_wampf_impl
 
 namespace std {
-template<>
+template <>
 struct hash<naive_cbs_wampf_impl::VertexConstraint> {
-  size_t
-  operator()(const naive_cbs_wampf_impl::VertexConstraint &s) const {
+  size_t operator()(const naive_cbs_wampf_impl::VertexConstraint &s) const {
     size_t seed = 0;
     boost::hash_combine(seed, s.time);
     boost::hash_combine(seed, s.x);
@@ -152,7 +144,7 @@ struct hash<naive_cbs_wampf_impl::VertexConstraint> {
 namespace naive_cbs_wampf_impl {
 struct EdgeConstraint {
   EdgeConstraint(int time, int x1, int y1, int x2, int y2)
-          : time(time), x1(x1), y1(y1), x2(x2), y2(y2) {}
+      : time(time), x1(x1), y1(y1), x2(x2), y2(y2) {}
 
   int time;
   int x1;
@@ -170,18 +162,16 @@ struct EdgeConstraint {
            std::tie(other.time, other.x1, other.y1, other.x2, other.y2);
   }
 
-  friend std::ostream &
-  operator<<(std::ostream &os, const EdgeConstraint &c) {
-    return os << "EC(" << c.time << "," << c.x1 << "," << c.y1 << ","
-              << c.x2
+  friend std::ostream &operator<<(std::ostream &os, const EdgeConstraint &c) {
+    return os << "EC(" << c.time << "," << c.x1 << "," << c.y1 << "," << c.x2
               << "," << c.y2 << ")";
   }
 };
 
-}
+}  // namespace naive_cbs_wampf_impl
 
 namespace std {
-template<>
+template <>
 struct hash<naive_cbs_wampf_impl::EdgeConstraint> {
   size_t operator()(const naive_cbs_wampf_impl::EdgeConstraint &s) const {
     size_t seed = 0;
@@ -210,8 +200,7 @@ struct Constraints {
   bool overlap(const Constraints &other) {
     std::vector<VertexConstraint> vertexIntersection;
     std::vector<EdgeConstraint> edgeIntersection;
-    std::set_intersection(vertexConstraints.begin(),
-                          vertexConstraints.end(),
+    std::set_intersection(vertexConstraints.begin(), vertexConstraints.end(),
                           other.vertexConstraints.begin(),
                           other.vertexConstraints.end(),
                           std::back_inserter(vertexIntersection));
@@ -222,8 +211,7 @@ struct Constraints {
     return !vertexIntersection.empty() || !edgeIntersection.empty();
   }
 
-  friend std::ostream &
-  operator<<(std::ostream &os, const Constraints &c) {
+  friend std::ostream &operator<<(std::ostream &os, const Constraints &c) {
     for (const auto &vc : c.vertexConstraints) {
       os << vc << std::endl;
     }
@@ -234,52 +222,54 @@ struct Constraints {
   }
 };
 
-}
+}  // namespace naive_cbs_wampf_impl
 
 namespace naive_cbs_wampf_impl {
-template<typename Environment, typename Location>
+template <typename Environment, typename Location>
 class EnvironmentView {
-private:
-  const Environment *env_;      //change to a pointer
+ private:
+  const Environment *env_;
   std::vector<Location> goals_;
   size_t agentIdx_;
   const Constraints *constraints_;
   int lastGoalConstraint_;
   int highLevelExpanded_;
   int lowLevelExpanded_;
-public:
-  Location min_pos_;       //let view own
+
+ public:
+  Location min_pos_;
   Location max_pos_;
 
-  Environment *getEnvPtr() const {
-    return env_;
-  }
+  const Environment *getEnvPtr() const { return env_; }
 
-  void updateGoals(std::vector<Location> goals) {
-    goals_ = std::move(goals);
-  }
+  void updateGoals(std::vector<Location> goals) { goals_ = std::move(goals); }
 
   EnvironmentView(Location min_pos, Location max_pos,
-                  std::vector<Location> goals,
-                  const Environment *environment) :
-          env_(environment),
-          goals_(std::move(goals)),
-          agentIdx_(0),
-          constraints_(nullptr),
-          lastGoalConstraint_(-1),
-          highLevelExpanded_(0),
-          lowLevelExpanded_(0),
-          min_pos_(min_pos),
-          max_pos_(max_pos) {}
+                  std::vector<Location> goals, const Environment *environment)
+      : env_(environment),
+        goals_(std::move(goals)),
+        agentIdx_(0),
+        constraints_(nullptr),
+        lastGoalConstraint_(-1),
+        highLevelExpanded_(0),
+        lowLevelExpanded_(0),
+        min_pos_(min_pos),
+        max_pos_(max_pos) {}
 
-  int admissibleHeuristic(const CBSState &s) {
+  EnvironmentView(const EnvironmentView &) = default;
+  EnvironmentView(EnvironmentView &&) = default;
+
+  EnvironmentView &operator=(const EnvironmentView &o) = default;
+  EnvironmentView &operator=(EnvironmentView &) = default;
+
+  int admissibleHeuristic(const CBSState &s) const {
+    NP_CHECK_LT(agentIdx_, goals_.size());
     return std::abs(s.x - goals_[agentIdx_].x) +
            std::abs(s.y - goals_[agentIdx_].y);
   }
 
-  void
-  setLowLevelContext(size_t agentIdx, const Constraints *constraints) {
-    assert(constraints);  // NOLINT
+  void setLowLevelContext(size_t agentIdx, const Constraints *constraints) {
+    NP_NOT_NULL(constraints);
     agentIdx_ = agentIdx;
     constraints_ = constraints;
     lastGoalConstraint_ = -1;
@@ -290,65 +280,63 @@ public:
     }
   }
 
-  bool isSolution(const CBSState &s) {
+  bool isSolution(const CBSState &s) const {
+    NP_CHECK_LT(agentIdx_, goals_.size());
     return s.x == goals_[agentIdx_].x && s.y == goals_[agentIdx_].y &&
            s.time > lastGoalConstraint_;
   }
 
-  // check if neighbors are inside the current window, if not, throw them out TODO
-  void getNeighbors(const CBSState &s,
-                    std::vector<Neighbor<CBSState, CBSAction, int> > &neighbors) {
+  // TODO(aiyer): check if neighbors are inside the current window, if not,
+  // throw them out.
+  void getNeighbors(
+      const CBSState &s,
+      std::vector<Neighbor<CBSState, CBSAction, int> > &neighbors) const {
     neighbors.clear();
     {
       CBSState n(s.time + 1, s.x, s.y);
       if (CBSStateValid(n) && TransitionValid(s, n)) {
         neighbors.emplace_back(
-                Neighbor<CBSState, CBSAction, int>(n, CBSAction::Wait,
-                                                   1));
+            Neighbor<CBSState, CBSAction, int>(n, CBSAction::Wait, 1));
       }
     }
     {
       CBSState n(s.time + 1, s.x - 1, s.y);
       if (CBSStateValid(n) && TransitionValid(s, n)) {
         neighbors.emplace_back(
-                Neighbor<CBSState, CBSAction, int>(n, CBSAction::Left,
-                                                   1));
+            Neighbor<CBSState, CBSAction, int>(n, CBSAction::Left, 1));
       }
     }
     {
       CBSState n(s.time + 1, s.x + 1, s.y);
       if (CBSStateValid(n) && TransitionValid(s, n)) {
         neighbors.emplace_back(
-                Neighbor<CBSState, CBSAction, int>(n, CBSAction::Right,
-                                                   1));
+            Neighbor<CBSState, CBSAction, int>(n, CBSAction::Right, 1));
       }
     }
     {
       CBSState n(s.time + 1, s.x, s.y + 1);
       if (CBSStateValid(n) && TransitionValid(s, n)) {
         neighbors.emplace_back(
-                Neighbor<CBSState, CBSAction, int>(n, CBSAction::Up, 1));
+            Neighbor<CBSState, CBSAction, int>(n, CBSAction::Up, 1));
       }
     }
     {
       CBSState n(s.time + 1, s.x, s.y - 1);
       if (CBSStateValid(n) && TransitionValid(s, n)) {
         neighbors.emplace_back(
-                Neighbor<CBSState, CBSAction, int>(n, CBSAction::Down,
-                                                   1));
+            Neighbor<CBSState, CBSAction, int>(n, CBSAction::Down, 1));
       }
     }
   }
 
   bool getFirstConflict(
-          const std::vector<PlanResult<CBSState, CBSAction, int> > &solution,
-          Conflict &result) {
+      const std::vector<PlanResult<CBSState, CBSAction, int> > &solution,
+      Conflict &result) {
     return env_->getFirstConflict(solution, result);
   }
 
   void createConstraintsFromConflict(
-          const Conflict &conflict,
-          std::map<size_t, Constraints> &constraints) {
+      const Conflict &conflict, std::map<size_t, Constraints> &constraints) {
     env_->createConstraintsFromConflict(conflict, constraints);
   }
 
@@ -359,41 +347,40 @@ public:
     lowLevelExpanded_++;
   }
 
-private:
-  bool CBSStateValid(const CBSState &s) {
-    assert(constraints_);
+ private:
+  bool CBSStateValid(const CBSState &s) const {
+    NP_NOT_NULL(constraints_);
     const auto &con = constraints_->vertexConstraints;
     return env_->CBSStateBoundsCheck(s) &&
            con.find(VertexConstraint(s.time, s.x, s.y)) == con.end();
   }
 
-  bool TransitionValid(const CBSState &s1, const CBSState &s2) {
-    assert(constraints_);
+  bool TransitionValid(const CBSState &s1, const CBSState &s2) const {
+    NP_NOT_NULL(constraints_);
     const auto &con = constraints_->edgeConstraints;
     return con.find(EdgeConstraint(s1.time, s1.x, s1.y, s2.x, s2.y)) ==
            con.end();
   }
 };
 
-template<typename Location>
+template <typename Location>
 class NaiveCBSEnvironment {
-public:
+ public:
   NaiveCBSEnvironment(size_t dimx, size_t dimy,
                       const std::unordered_set<Location> &obstacles,
                       std::vector<Location> goals)
-          : dimx_(dimx),
-            dimy_(dimy),
-            obstacles_(obstacles),
-            goals_(std::move(goals)) {}
+      : dimx_(dimx),
+        dimy_(dimy),
+        obstacles_(obstacles),
+        goals_(std::move(goals)) {}
 
   NaiveCBSEnvironment(const NaiveCBSEnvironment &) = delete;
 
   NaiveCBSEnvironment &operator=(const NaiveCBSEnvironment &) = delete;
 
-
   bool getFirstConflict(
-          const std::vector<PlanResult<CBSState, CBSAction, int> > &solution,
-          Conflict &result) {
+      const std::vector<PlanResult<CBSState, CBSAction, int> > &solution,
+      Conflict &result) const {
     int max_t = 0;
     for (const auto &sol : solution) {
       max_t = std::max<int>(max_t, sol.states.size() - 1);
@@ -443,37 +430,36 @@ public:
   }
 
   void createConstraintsFromConflict(
-          const Conflict &conflict,
-          std::map<size_t, Constraints> &constraints) {
+      const Conflict &conflict,
+      std::map<size_t, Constraints> &constraints) const {
     if (conflict.type == Conflict::Vertex) {
       Constraints c1;
       c1.vertexConstraints.emplace(
-              VertexConstraint(conflict.time, conflict.x1, conflict.y1));
+          VertexConstraint(conflict.time, conflict.x1, conflict.y1));
       constraints[conflict.agent1] = c1;
       constraints[conflict.agent2] = c1;
     } else if (conflict.type == Conflict::Edge) {
       Constraints c1;
       c1.edgeConstraints.emplace(EdgeConstraint(
-              conflict.time, conflict.x1, conflict.y1, conflict.x2,
-              conflict.y2));
+          conflict.time, conflict.x1, conflict.y1, conflict.x2, conflict.y2));
       constraints[conflict.agent1] = c1;
       Constraints c2;
       c2.edgeConstraints.emplace(EdgeConstraint(
-              conflict.time, conflict.x2, conflict.y2, conflict.x1,
-              conflict.y1));
+          conflict.time, conflict.x2, conflict.y2, conflict.x1, conflict.y1));
       constraints[conflict.agent2] = c2;
     }
   }
 
-  bool CBSStateBoundsCheck(const CBSState &s) {
+  bool CBSStateBoundsCheck(const CBSState &s) const {
     return s.x >= 0 && s.x < dimx_ && s.y >= 0 && s.y < dimy_ &&
            obstacles_.find({s.x, s.y}) == obstacles_.end();
   }
 
-private:
-  CBSState GetCBSState(size_t agentIdx,
-                       const std::vector<PlanResult<CBSState, CBSAction, int> > &solution,
-                       size_t t) {
+ private:
+  CBSState GetCBSState(
+      size_t agentIdx,
+      const std::vector<PlanResult<CBSState, CBSAction, int> > &solution,
+      size_t t) const {
     assert(agentIdx < solution.size());
     if (t < solution[agentIdx].states.size()) {
       return solution[agentIdx].states[t].first;
@@ -482,10 +468,10 @@ private:
     return solution[agentIdx].states.back().first;
   }
 
-private:
+ private:
   int dimx_;
   int dimy_;
   const std::unordered_set<Location> &obstacles_;
   std::vector<Location> goals_;
 };
-}
+}  // namespace naive_cbs_wampf_impl

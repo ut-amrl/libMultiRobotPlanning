@@ -8,20 +8,18 @@
 #include "wampf_naive_cbs_env.h"
 namespace libMultiRobotPlanning {
 
-template <int kStartRadius = 2, int kRadiusGrowth = 1>
+template <typename Env, typename EnvView, int kStartRadius = 2,
+          int kRadiusGrowth = 1>
 struct Window {
  private:
   Window() = delete;
-  using EnvViewType = naive_cbs_wampf_impl::EnvironmentView<
-      naive_cbs_wampf_impl::NaiveCBSEnvironment<State>, State>;
-  using EnvType = naive_cbs_wampf_impl::NaiveCBSEnvironment<State>;
 
  public:
   std::vector<size_t> agent_idxs_;
-  EnvViewType env_view_;
+  EnvView env_view_;
   CBS<naive_cbs_wampf_impl::CBSState, naive_cbs_wampf_impl::CBSAction, int,
       naive_cbs_wampf_impl::Conflict, naive_cbs_wampf_impl::Constraints,
-      EnvViewType>
+      EnvView>
       cbs_;
 
   //  Window& operator=(const Window& other) {
@@ -30,17 +28,27 @@ struct Window {
   //    this->
   //  }
 
-  Window(State state, const std::vector<size_t> agent_idxs, const EnvType& env)
+  Window(State state, const std::vector<size_t> agent_idxs, const Env* env)
       : agent_idxs_(agent_idxs),
-        env_view_(state, state, std::vector<State>(), &env),
-        cbs_(env_view_) {
+        env_view_(state, state, std::vector<State>(), env),
+        cbs_(&env_view_) {
     env_view_.min_pos_.x -= kStartRadius;
     env_view_.min_pos_.y -= kStartRadius;
     env_view_.max_pos_.x += kStartRadius;
     env_view_.max_pos_.y += kStartRadius;
   }
 
-  void operator=(const Window& other) {}
+  Window(State min_pos, State max_pos, const std::vector<size_t> agent_idxs,
+         const Env* env)
+      : agent_idxs_(agent_idxs),
+        env_view_(min_pos, max_pos, std::vector<State>(), env),
+        cbs_(&env_view_) {}
+
+  Window(const Window&) = default;
+  Window(Window&&) = default;
+
+  Window& operator=(const Window&) = default;
+  Window& operator=(Window&&) = default;
 
   bool operator==(const Window& other) const {
     return (env_view_.min_pos_ == other.env_view_.min_pos_) &&
@@ -49,12 +57,6 @@ struct Window {
   }
 
   bool operator!=(const Window& other) const { return !(*this == other); }
-
-  Window(State min_pos, State max_pos, const std::vector<size_t> agent_idxs,
-         const EnvType& env)
-      : agent_idxs_(agent_idxs),
-        env_view_(min_pos, max_pos, std::vector<State>(), &env),
-        cbs_(env_view_) {}
 
   bool HasAgent(const size_t agent_idx) const {
     return (std::find(agent_idxs_.begin(), agent_idxs_.end(), agent_idx) !=
@@ -94,8 +96,9 @@ struct Window {
     State other_off2(other.env_view_.max_pos_.x, other.env_view_.min_pos_.y);
 
     // Check if their four corners are inside our box.
-    if (Contains(other.env_view_.min_pos_) || Contains(other.env_view_.max_pos_) ||
-        Contains(other_off1) || Contains(other_off2)) {
+    if (Contains(other.env_view_.min_pos_) ||
+        Contains(other.env_view_.max_pos_) || Contains(other_off1) ||
+        Contains(other_off2)) {
       return true;
     }
     return false;
@@ -132,8 +135,9 @@ struct Window {
                      other.env_view_.min_pos_.y - kRadiusGrowth);
 
     // Check if their four corners are inside our box.
-    if (Contains(other.env_view_.min_pos_) || Contains(other.env_view_.max_pos_) ||
-        Contains(other_off1) || Contains(other_off2)) {
+    if (Contains(other.env_view_.min_pos_) ||
+        Contains(other.env_view_.max_pos_) || Contains(other_off1) ||
+        Contains(other_off2)) {
       return true;
     }
     return false;

@@ -22,12 +22,6 @@ struct Window {
       EnvView>
       cbs_;
 
-  //  Window& operator=(const Window& other) {
-  //    this->min_pos_ = other.min_pos_;
-  //    this->max_pos_ = other.max_pos_;
-  //    this->
-  //  }
-
   Window(State state, const std::vector<size_t> agent_idxs, const Env* env)
       : agent_idxs_(agent_idxs),
         env_view_(state, state, std::vector<State>(), env),
@@ -44,11 +38,11 @@ struct Window {
         env_view_(min_pos, max_pos, std::vector<State>(), env),
         cbs_(&env_view_) {}
 
-  Window(const Window&) = default;
-  Window(Window&&) = default;
+  Window(const Window&) = delete;
+  Window(Window&&) = delete;
 
-  Window& operator=(const Window&) = default;
-  Window& operator=(Window&&) = default;
+  Window& operator=(const Window&) = delete;
+  Window& operator=(Window&&) = delete;
 
   bool operator==(const Window& other) const {
     return (env_view_.min_pos_ == other.env_view_.min_pos_) &&
@@ -163,10 +157,8 @@ struct Window {
     joined_agent_idxs.resize(std::distance(joined_agent_idxs.begin(), it));
     std::sort(joined_agent_idxs.begin(), joined_agent_idxs.end());
 
-    std::unique_ptr<Window> new_w =
-        std::make_unique<Window>(State(min_x, min_y), State(max_x, max_y),
-                                 joined_agent_idxs, env_view_.getEnvPtr());
-    return new_w;
+    return std::make_unique<Window>(State(min_x, min_y), State(max_x, max_y),
+                                    joined_agent_idxs, env_view_.getEnvPtr());
   }
 };
 

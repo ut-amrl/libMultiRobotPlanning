@@ -1,5 +1,6 @@
 #pragma once
 
+#include <sstream>
 #include <vector>
 #include "utils.hpp"
 
@@ -29,8 +30,15 @@ struct PlanResult {
 };
 
 template <typename State, typename Action, typename Cost>
-std::ostream& operator<<(std::ostream& os,
-                         const PlanResult<State, Action, Cost>& p) {
+std::ostream& operator<<(
+    std::ostream& os,
+    const libMultiRobotPlanning::PlanResult<State, Action, Cost>& p);
+}  // namespace libMultiRobotPlanning
+
+template <typename State, typename Action, typename Cost>
+std::ostream& libMultiRobotPlanning::operator<<(
+    std::ostream& os,
+    const libMultiRobotPlanning::PlanResult<State, Action, Cost>& p) {
   os << "PlanResult: (cost: " << p.cost << ") [";
   if (p.states.empty()) {
     os << "]";
@@ -45,5 +53,3 @@ std::ostream& operator<<(std::ostream& os,
   os << "]";
   return os;
 }
-
-}  // namespace libMultiRobotPlanning

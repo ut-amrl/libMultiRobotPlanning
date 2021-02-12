@@ -157,19 +157,6 @@ struct TestEnvView {
 
 using W = Window<TestEnv, TestEnvView, 1, 1>;
 
-TEST(WindowDefinition, OptionalAssignment) {
-  TestEnv env;
-  auto make_opt = [&env]() -> W {
-    W w(State(0, 3), std::vector<size_t>({0, 1}), &env);
-    //    std::optional<W> o(w);
-    return w;
-  };
-  //  std::optional<W>
-  W w_assign(State(0, 3), std::vector<size_t>({0, 1}), &env);
-  w_assign = make_opt();
-  //  EXPECT_TRUE(opt);
-}
-
 TEST(WindowIntersection, SimpleWindow) {
   PR p1;
   p1.states = {{{0, 0}, 0}, {{0, 1}, 1}, {{0, 2}, 2},
@@ -205,10 +192,7 @@ TEST(WindowIntersection, SimpleWindow) {
 
   W w(State(0, 3), std::vector<size_t>({0, 1}), &env);
 
-  W w_new = w;
-  W w_other = std::move(w_new);
-
-  EXPECT_TRUE(w_other.HasAgent(0));
+  EXPECT_TRUE(w.HasAgent(0));
 
   EXPECT_EQ(w.env_view_.max_pos_, State(1, 4));
   EXPECT_EQ(w.env_view_.min_pos_, State(-1, 2));

@@ -30,9 +30,7 @@ class WAMPF {
 
   void RecWAMPF() {
     for (int i = 0; i < static_cast<int>(W_.size()); ++i) {
-      //      auto& wk = *W_[i];
       if (IsOverlappingAnotherWindow(*W_[i])) {
-        // auto wk_copy = std::move(wk);
         std::unique_ptr<Window> wk_copy = std::move(W_[i]);
         W_.erase(W_.begin() + i);
         --i;
@@ -45,7 +43,7 @@ class WAMPF {
     auto collision_res = impl_.FirstCollisionWindow();
     while (collision_res) {
       PlanInOverlapWindows(std::move(*collision_res));
-      collision_res = impl_.FirstCollisionWindow();  // ADD STD::MOVE
+      collision_res = impl_.FirstCollisionWindow();
     }
 
     for (int i = 0; i < static_cast<int>(W_.size()); ++i) {

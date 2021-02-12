@@ -16,15 +16,14 @@ using libMultiRobotPlanning::PlanResult;
 struct CBSState {
   CBSState(int time, int x, int y) : time(time), x(x), y(y) {}
 
-  bool operator==(const CBSState &s) const {
+  bool operator==(const CBSState& s) const {
     return time == s.time && x == s.x && y == s.y;
   }
 
-  bool equalExceptTime(const CBSState &s) const { return x == s.x && y == s.y; }
+  bool equalExceptTime(const CBSState& s) const { return x == s.x && y == s.y; }
 
-  friend std::ostream &operator<<(std::ostream &os, const CBSState &s) {
+  friend std::ostream& operator<<(std::ostream& os, const CBSState& s) {
     return os << s.time << ": (" << s.x << "," << s.y << ")";
-    // return os << "(" << s.x << "," << s.y << ")";
   }
 
   int time;
@@ -36,7 +35,7 @@ struct CBSState {
 namespace std {
 template <>
 struct hash<naive_cbs_wampf_impl::CBSState> {
-  size_t operator()(const naive_cbs_wampf_impl::CBSState &s) const {
+  size_t operator()(const naive_cbs_wampf_impl::CBSState& s) const {
     size_t seed = 0;
     boost::hash_combine(seed, s.time);
     boost::hash_combine(seed, s.x);
@@ -55,8 +54,8 @@ enum class CBSAction {
   Wait,
 };
 
-std::ostream &operator<<(std::ostream &os,
-                         const naive_cbs_wampf_impl::CBSAction &a) {
+std::ostream& operator<<(std::ostream& os,
+                         const naive_cbs_wampf_impl::CBSAction& a) {
   switch (a) {
     case CBSAction::Up:
       os << "Up";
@@ -95,7 +94,7 @@ struct Conflict {
   int x2;
   int y2;
 
-  friend std::ostream &operator<<(std::ostream &os, const Conflict &c) {
+  friend std::ostream& operator<<(std::ostream& os, const Conflict& c) {
     switch (c.type) {
       case Vertex:
         return os << c.time << ": Vertex(" << c.x1 << "," << c.y1 << ")";
@@ -114,15 +113,15 @@ struct VertexConstraint {
   int x;
   int y;
 
-  bool operator<(const VertexConstraint &other) const {
+  bool operator<(const VertexConstraint& other) const {
     return std::tie(time, x, y) < std::tie(other.time, other.x, other.y);
   }
 
-  bool operator==(const VertexConstraint &other) const {
+  bool operator==(const VertexConstraint& other) const {
     return std::tie(time, x, y) == std::tie(other.time, other.x, other.y);
   }
 
-  friend std::ostream &operator<<(std::ostream &os, const VertexConstraint &c) {
+  friend std::ostream& operator<<(std::ostream& os, const VertexConstraint& c) {
     return os << "VC(" << c.time << "," << c.x << "," << c.y << ")";
   }
 };
@@ -131,7 +130,7 @@ struct VertexConstraint {
 namespace std {
 template <>
 struct hash<naive_cbs_wampf_impl::VertexConstraint> {
-  size_t operator()(const naive_cbs_wampf_impl::VertexConstraint &s) const {
+  size_t operator()(const naive_cbs_wampf_impl::VertexConstraint& s) const {
     size_t seed = 0;
     boost::hash_combine(seed, s.time);
     boost::hash_combine(seed, s.x);
@@ -152,17 +151,17 @@ struct EdgeConstraint {
   int x2;
   int y2;
 
-  bool operator<(const EdgeConstraint &other) const {
+  bool operator<(const EdgeConstraint& other) const {
     return std::tie(time, x1, y1, x2, y2) <
            std::tie(other.time, other.x1, other.y1, other.x2, other.y2);
   }
 
-  bool operator==(const EdgeConstraint &other) const {
+  bool operator==(const EdgeConstraint& other) const {
     return std::tie(time, x1, y1, x2, y2) ==
            std::tie(other.time, other.x1, other.y1, other.x2, other.y2);
   }
 
-  friend std::ostream &operator<<(std::ostream &os, const EdgeConstraint &c) {
+  friend std::ostream& operator<<(std::ostream& os, const EdgeConstraint& c) {
     return os << "EC(" << c.time << "," << c.x1 << "," << c.y1 << "," << c.x2
               << "," << c.y2 << ")";
   }
@@ -173,7 +172,7 @@ struct EdgeConstraint {
 namespace std {
 template <>
 struct hash<naive_cbs_wampf_impl::EdgeConstraint> {
-  size_t operator()(const naive_cbs_wampf_impl::EdgeConstraint &s) const {
+  size_t operator()(const naive_cbs_wampf_impl::EdgeConstraint& s) const {
     size_t seed = 0;
     boost::hash_combine(seed, s.time);
     boost::hash_combine(seed, s.x1);
@@ -190,14 +189,14 @@ struct Constraints {
   std::unordered_set<VertexConstraint> vertexConstraints;
   std::unordered_set<EdgeConstraint> edgeConstraints;
 
-  void add(const Constraints &other) {
+  void add(const Constraints& other) {
     vertexConstraints.insert(other.vertexConstraints.begin(),
                              other.vertexConstraints.end());
     edgeConstraints.insert(other.edgeConstraints.begin(),
                            other.edgeConstraints.end());
   }
 
-  bool overlap(const Constraints &other) {
+  bool overlap(const Constraints& other) {
     std::vector<VertexConstraint> vertexIntersection;
     std::vector<EdgeConstraint> edgeIntersection;
     std::set_intersection(vertexConstraints.begin(), vertexConstraints.end(),
@@ -211,11 +210,11 @@ struct Constraints {
     return !vertexIntersection.empty() || !edgeIntersection.empty();
   }
 
-  friend std::ostream &operator<<(std::ostream &os, const Constraints &c) {
-    for (const auto &vc : c.vertexConstraints) {
+  friend std::ostream& operator<<(std::ostream& os, const Constraints& c) {
+    for (const auto& vc : c.vertexConstraints) {
       os << vc << std::endl;
     }
-    for (const auto &ec : c.edgeConstraints) {
+    for (const auto& ec : c.edgeConstraints) {
       os << ec << std::endl;
     }
     return os;
@@ -228,10 +227,10 @@ namespace naive_cbs_wampf_impl {
 template <typename Environment, typename Location>
 class EnvironmentView {
  private:
-  const Environment *env_;
+  const Environment* env_;
   std::vector<Location> goals_;
   size_t agentIdx_;
-  const Constraints *constraints_;
+  const Constraints* constraints_;
   int lastGoalConstraint_;
   int highLevelExpanded_;
   int lowLevelExpanded_;
@@ -240,12 +239,12 @@ class EnvironmentView {
   Location min_pos_;
   Location max_pos_;
 
-  const Environment *getEnvPtr() const { return env_; }
+  const Environment* getEnvPtr() const { return env_; }
 
   void updateGoals(std::vector<Location> goals) { goals_ = goals; }
 
   EnvironmentView(Location min_pos, Location max_pos,
-                  std::vector<Location> goals, const Environment *environment)
+                  std::vector<Location> goals, const Environment* environment)
       : env_(environment),
         goals_(std::move(goals)),
         agentIdx_(0),
@@ -256,39 +255,39 @@ class EnvironmentView {
         min_pos_(min_pos),
         max_pos_(max_pos) {}
 
-  EnvironmentView(const EnvironmentView &) = default;
-  EnvironmentView(EnvironmentView &&) = default;
+  EnvironmentView(const EnvironmentView&) = default;
+  EnvironmentView(EnvironmentView&&) = default;
 
-  EnvironmentView &operator=(const EnvironmentView &o) = default;
-  EnvironmentView &operator=(EnvironmentView &) = default;
+  EnvironmentView& operator=(const EnvironmentView& o) = default;
+  EnvironmentView& operator=(EnvironmentView&) = default;
 
-  int admissibleHeuristic(const CBSState &s) const {
+  int admissibleHeuristic(const CBSState& s) const {
     NP_CHECK_LT(agentIdx_, goals_.size());
     return std::abs(s.x - goals_[agentIdx_].x) +
            std::abs(s.y - goals_[agentIdx_].y);
   }
 
-  void setLowLevelContext(size_t agentIdx, const Constraints *constraints) {
+  void setLowLevelContext(size_t agentIdx, const Constraints* constraints) {
     NP_NOT_NULL(constraints);
     agentIdx_ = agentIdx;
     constraints_ = constraints;
     lastGoalConstraint_ = -1;
-    for (const auto &vc : constraints->vertexConstraints) {
+    for (const auto& vc : constraints->vertexConstraints) {
       if (vc.x == goals_[agentIdx_].x && vc.y == goals_[agentIdx_].y) {
         lastGoalConstraint_ = std::max(lastGoalConstraint_, vc.time);
       }
     }
   }
 
-  bool isSolution(const CBSState &s) const {
+  bool isSolution(const CBSState& s) const {
     NP_CHECK_LT(agentIdx_, goals_.size());
     return s.x == goals_[agentIdx_].x && s.y == goals_[agentIdx_].y &&
            s.time > lastGoalConstraint_;
   }
 
   void getNeighbors(
-      const CBSState &s,
-      std::vector<Neighbor<CBSState, CBSAction, int> > &neighbors) const {
+      const CBSState& s,
+      std::vector<Neighbor<CBSState, CBSAction, int>>& neighbors) const {
     neighbors.clear();
     {
       CBSState n(s.time + 1, s.x, s.y);
@@ -328,39 +327,39 @@ class EnvironmentView {
   }
 
   bool getFirstConflict(
-      const std::vector<PlanResult<CBSState, CBSAction, int> > &solution,
-      Conflict &result) {
+      const std::vector<PlanResult<CBSState, CBSAction, int>>& solution,
+      Conflict& result) {
     return env_->getFirstConflict(solution, result);
   }
 
   void createConstraintsFromConflict(
-      const Conflict &conflict, std::map<size_t, Constraints> &constraints) {
+      const Conflict& conflict, std::map<size_t, Constraints>& constraints) {
     env_->createConstraintsFromConflict(conflict, constraints);
   }
 
   void onExpandHighLevelNode(int /*cost*/) { highLevelExpanded_++; }
 
-  void onExpandLowLevelNode(const CBSState & /*s*/, int /*fScore*/,
+  void onExpandLowLevelNode(const CBSState& /*s*/, int /*fScore*/,
                             int /*gScore*/) {
     lowLevelExpanded_++;
   }
 
  private:
-  bool CBSStateWindowBoundsCheck(const CBSState &s) const {
+  bool CBSStateWindowBoundsCheck(const CBSState& s) const {
     return s.x >= min_pos_.x && s.x <= max_pos_.x && s.y >= min_pos_.y &&
            s.y <= max_pos_.y;
   }
 
-  bool CBSStateValid(const CBSState &s) const {
+  bool CBSStateValid(const CBSState& s) const {
     NP_NOT_NULL(constraints_);
-    const auto &con = constraints_->vertexConstraints;
+    const auto& con = constraints_->vertexConstraints;
     return env_->CBSStateBoundsCheck(s) && CBSStateWindowBoundsCheck(s) &&
            con.find(VertexConstraint(s.time, s.x, s.y)) == con.end();
   }
 
-  bool TransitionValid(const CBSState &s1, const CBSState &s2) const {
+  bool TransitionValid(const CBSState& s1, const CBSState& s2) const {
     NP_NOT_NULL(constraints_);
-    const auto &con = constraints_->edgeConstraints;
+    const auto& con = constraints_->edgeConstraints;
     return con.find(EdgeConstraint(s1.time, s1.x, s1.y, s2.x, s2.y)) ==
            con.end();
   }
@@ -377,15 +376,15 @@ class NaiveCBSEnvironment {
         obstacles_(std::move(obstacles)),
         goals_(std::move(goals)) {}
 
-  NaiveCBSEnvironment(const NaiveCBSEnvironment &) = delete;
+  NaiveCBSEnvironment(const NaiveCBSEnvironment&) = delete;
 
-  NaiveCBSEnvironment &operator=(const NaiveCBSEnvironment &) = delete;
+  NaiveCBSEnvironment& operator=(const NaiveCBSEnvironment&) = delete;
 
   bool getFirstConflict(
-      const std::vector<PlanResult<CBSState, CBSAction, int> > &solution,
-      Conflict &result) const {
+      const std::vector<PlanResult<CBSState, CBSAction, int>>& solution,
+      Conflict& result) const {
     int max_t = 0;
-    for (const auto &sol : solution) {
+    for (const auto& sol : solution) {
       max_t = std::max<int>(max_t, sol.states.size() - 1);
     }
 
@@ -433,8 +432,8 @@ class NaiveCBSEnvironment {
   }
 
   void createConstraintsFromConflict(
-      const Conflict &conflict,
-      std::map<size_t, Constraints> &constraints) const {
+      const Conflict& conflict,
+      std::map<size_t, Constraints>& constraints) const {
     if (conflict.type == Conflict::Vertex) {
       Constraints c1;
       c1.vertexConstraints.emplace(
@@ -453,7 +452,7 @@ class NaiveCBSEnvironment {
     }
   }
 
-  bool CBSStateBoundsCheck(const CBSState &s) const {
+  bool CBSStateBoundsCheck(const CBSState& s) const {
     return s.x >= 0 && s.x < dimx_ && s.y >= 0 && s.y < dimy_ &&
            obstacles_.find({s.x, s.y}) == obstacles_.end();
   }
@@ -461,7 +460,7 @@ class NaiveCBSEnvironment {
  private:
   CBSState GetCBSState(
       size_t agentIdx,
-      const std::vector<PlanResult<CBSState, CBSAction, int> > &solution,
+      const std::vector<PlanResult<CBSState, CBSAction, int>>& solution,
       size_t t) const {
     NP_CHECK(agentIdx < solution.size());
     if (t < solution[agentIdx].states.size()) {

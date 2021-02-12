@@ -125,10 +125,6 @@ struct Window {
     }
 
     // Inflating their box is equivalent to inflating our box.
-    State other_min_growth(other.env_view_.min_pos_.x - kRadiusGrowth,
-                           other.env_view_.min_pos_.y - kRadiusGrowth);
-    State other_max_growth(other.env_view_.max_pos_.x + kRadiusGrowth,
-                           other.env_view_.max_pos_.y + kRadiusGrowth);
     State other_off1(other.env_view_.min_pos_.x - kRadiusGrowth,
                      other.env_view_.max_pos_.y + kRadiusGrowth);
     State other_off2(other.env_view_.max_pos_.x + kRadiusGrowth,

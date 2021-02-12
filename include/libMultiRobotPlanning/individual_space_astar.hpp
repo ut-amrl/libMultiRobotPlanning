@@ -37,7 +37,7 @@ struct IndividualSpaceAStar {
       const State& start = joint_start_[i];
       const State& goal = joint_goal_[i];
       Environment env(dimx_, dimy_, obstacles_, goal);
-      AStar<State, Action, int, Environment> astar(env);
+      AStar<State, Action, int, Environment> astar(&env);
       PlanResult<State, Action, Cost> solution;
       if (env.stateValid(start)) {
         astar.search(start, solution);

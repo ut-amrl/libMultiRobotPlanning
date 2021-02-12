@@ -26,18 +26,12 @@ class CBS {
     start.id = 0;
 
     for (size_t i = 0; i < initialStates.size(); ++i) {
-      // if (   i < solution.size()
-      //     && solution[i].states.size() > 1) {
-      //   start.solution[i] = solution[i];
-      //   std::cout << "use existing solution for agent: " << i << std::endl;
-      // } else {
       LowLevelEnvironment llenv(m_env, i, start.constraints[i]);
-      LowLevelSearch_t lowLevel(llenv);
+      LowLevelSearch_t lowLevel(&llenv);
       bool success = lowLevel.search(initialStates[i], start.solution[i]);
       if (!success) {
         return false;
       }
-      // }
       start.cost += start.solution[i].cost;
     }
 
@@ -54,7 +48,6 @@ class CBS {
     while (!open.empty()) {
       HighLevelNode P = open.top();
       m_env->onExpandHighLevelNode(P.cost);
-      // std::cout << "expand: " << P << std::endl;
 
       open.pop();
 
@@ -66,21 +59,13 @@ class CBS {
       }
 
       // create additional nodes to resolve conflict
-      // std::cout << "Found conflict: " << conflict << std::endl;
-      // std::cout << "Found conflict at t=" << conflict.time << " type: " <<
-      // conflict.type << std::endl;
-
       std::map<size_t, Constraints> constraints;
       m_env->createConstraintsFromConflict(conflict, constraints);
       for (const auto& c : constraints) {
-        // std::cout << "Add HL node for " << c.first << std::endl;
         size_t i = c.first;
-        // std::cout << "create child with id " << id << std::endl;
         HighLevelNode newNode = P;
         newNode.id = id;
         // (optional) check that this constraint was not included already
-        // std::cout << newNode.constraints[i] << std::endl;
-        // std::cout << c.second << std::endl;
         assert(!newNode.constraints[i].overlap(c.second));
 
         newNode.constraints[i].add(c.second);
@@ -88,13 +73,12 @@ class CBS {
         newNode.cost -= newNode.solution[i].cost;
 
         LowLevelEnvironment llenv(m_env, i, newNode.constraints[i]);
-        LowLevelSearch_t lowLevel(llenv);
+        LowLevelSearch_t lowLevel(&llenv);
         bool success = lowLevel.search(initialStates[i], newNode.solution[i]);
 
         newNode.cost += newNode.solution[i].cost;
 
         if (success) {
-          // std::cout << "  success. cost: " << newNode.cost << std::endl;
           auto handle = open.push(newNode);
           (*handle).handle = handle;
         }
@@ -144,10 +128,7 @@ class CBS {
   struct LowLevelEnvironment {
     LowLevelEnvironment(Environment* env, size_t agentIdx,
                         const Constraints& constraints)
-        : m_env(env)
-    // , m_agentIdx(agentIdx)
-    // , m_constraints(constraints)
-    {
+        : m_env(env) {
       m_env->setLowLevelContext(agentIdx, &constraints);
     }
 
@@ -163,19 +144,13 @@ class CBS {
     }
 
     void onExpandNode(const State& s, Cost fScore, Cost gScore) {
-      // std::cout << "LL expand: " << s << std::endl;
       m_env->onExpandLowLevelNode(s, fScore, gScore);
     }
 
-    void onDiscover(const State& /*s*/, Cost /*fScore*/, Cost /*gScore*/) {
-      // std::cout << "LL discover: " << s << std::endl;
-      // m_env.onDiscoverLowLevel(s, m_agentIdx, m_constraints);
-    }
+    void onDiscover(const State& /*s*/, Cost /*fScore*/, Cost /*gScore*/) {}
 
    private:
     Environment* m_env;
-    // size_t m_agentIdx;
-    // const Constraints& m_constraints;
   };
 
  private:

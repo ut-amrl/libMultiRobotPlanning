@@ -1,0 +1,3 @@
+fix window.merge and first collision window in naiveacbsImpl, add environment to constructor.
+
+add more to get neighbors in view, don't add if it isn't in the range of the window

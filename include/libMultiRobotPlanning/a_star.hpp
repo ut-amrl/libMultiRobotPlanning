@@ -58,8 +58,12 @@ template <typename State, typename Action, typename Cost, typename Environment,
           typename StateHasher = std::hash<State> >
 class AStar {
  public:
-  AStar(Environment& environment) : m_env(environment) {}
+  AStar(Environment* environment) : m_env(environment) {}
+  AStar(const AStar&) = default;
+  AStar(AStar&&) = default;
 
+  AStar& operator=(const AStar&) = default;
+  AStar& operator=(AStar&&) = default;
   bool search(const State& startState,
               PlanResult<State, Action, Cost>& solution, Cost initialCost = 0) {
     solution.states.clear();
@@ -75,7 +79,7 @@ class AStar {
         cameFrom;
 
     auto handle = openSet.push(
-        Node(startState, m_env.admissibleHeuristic(startState), initialCost));
+        Node(startState, m_env->admissibleHeuristic(startState), initialCost));
     stateToHeap.insert(std::make_pair<>(startState, handle));
     (*handle).handle = handle;
 
@@ -84,9 +88,9 @@ class AStar {
 
     while (!openSet.empty()) {
       Node current = openSet.top();
-      m_env.onExpandNode(current.state, current.fScore, current.gScore);
+      m_env->onExpandNode(current.state, current.fScore, current.gScore);
 
-      if (m_env.isSolution(current.state)) {
+      if (m_env->isSolution(current.state)) {
         solution.states.clear();
         solution.actions.clear();
         auto iter = cameFrom.find(current.state);
@@ -112,19 +116,19 @@ class AStar {
 
       // traverse neighbors
       neighbors.clear();
-      m_env.getNeighbors(current.state, neighbors);
+      m_env->getNeighbors(current.state, neighbors);
       for (const Neighbor<State, Action, Cost>& neighbor : neighbors) {
         if (closedSet.find(neighbor.state) == closedSet.end()) {
           Cost tentative_gScore = current.gScore + neighbor.cost;
           auto iter = stateToHeap.find(neighbor.state);
           if (iter == stateToHeap.end()) {  // Discover a new node
             Cost fScore =
-                tentative_gScore + m_env.admissibleHeuristic(neighbor.state);
+                tentative_gScore + m_env->admissibleHeuristic(neighbor.state);
             auto handle =
                 openSet.push(Node(neighbor.state, fScore, tentative_gScore));
             (*handle).handle = handle;
             stateToHeap.insert(std::make_pair<>(neighbor.state, handle));
-            m_env.onDiscover(neighbor.state, fScore, tentative_gScore);
+            m_env->onDiscover(neighbor.state, fScore, tentative_gScore);
             // std::cout << "  this is a new node " << fScore << "," <<
             // tentative_gScore << std::endl;
           } else {
@@ -141,8 +145,8 @@ class AStar {
             (*handle).gScore = tentative_gScore;
             (*handle).fScore -= delta;
             openSet.increase(handle);
-            m_env.onDiscover(neighbor.state, (*handle).fScore,
-                             (*handle).gScore);
+            m_env->onDiscover(neighbor.state, (*handle).fScore,
+                              (*handle).gScore);
           }
 
           // Best path for this node so far
@@ -209,7 +213,7 @@ class AStar {
 #endif
 
  private:
-  Environment& m_env;
+  Environment* m_env;
 };
 
 }  // namespace libMultiRobotPlanning

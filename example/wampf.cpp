@@ -45,7 +45,8 @@ int main() {
   std::cout << "Starting WAMPF!" << std::endl;
   JointState start_state = {{30, 50}, {70, 50}};
   JointState goal_state = {{70, 50}, {30, 50}};
-  WAMPF wampf(100, 100, {}, start_state, goal_state);
+  WAMPF wampf(100, 100, {{32, 50}, {32, 49}, {32, 51}}, start_state,
+              goal_state);
   wampf.RecWAMPF();
   const auto& path = wampf.GetPath();
   for (const auto& p : path) {

@@ -41,21 +41,25 @@ class NaiveACBSImplementation {
                           std::unordered_set<State> obstacles,
                           const JointState& start, const JointState& goal,
                           JointPath* path)
-      : env_(dimx, dimy, std::move(obstacles), goal),
-        //        dimx_(dimx),
-        //        dimy_(dimy),
-        //        obstacles_(std::move(obstacles)),
+      : env_(dimx, dimy, obstacles,
+             goal),  // ask kyle if it is okay, before it was
+                     // std::move(obstacles) but the constructor took a const
+                     // reference to obstacles.
+                     //        dimx_(dimx),
+                     //        dimy_(dimy),
+                     //        obstacles_(std::move(obstacles)),
         start_(start),
         //        goal_(goal),
         path_(path) {}
 
-  std::optional<Window> FirstCollisionWindow() {
+  std::optional<std::unique_ptr<Window>> FirstCollisionWindow() {
     auto res = FirstConflict();
     if (!res) {
       return {};
     }
-    // todo: pass through environment view for new window creation
-    return {{std::move(res->first), std::move(res->second), &env_}};
+
+    return {std::make_unique<Window>(std::move(res->first),
+                                     std::move(res->second), &env_)};
   }
 
   std::pair<int, int> GetStartEndIndices(const Window& w) const {
@@ -81,7 +85,7 @@ class NaiveACBSImplementation {
     return {min_start_idx, max_goal_idx};
   }
 
-  void PlanIn(Window* w) {
+  void PlanIn(std::unique_ptr<Window>& w) {
     auto [start_idx, goal_idx] = GetStartEndIndices(*w);
 
     std::vector<naive_cbs_wampf_impl::CBSState> start_state;
@@ -116,7 +120,7 @@ class NaiveACBSImplementation {
     }
   }
 
-  void GrowAndReplanIn(Window* w) { w->Grow(); }
+  void GrowAndReplanIn(std::unique_ptr<Window>& w) { w->Grow(); }
 
  private:
   IndividualSpaceAction CBSActionToIndividualSpaceAction(

@@ -97,48 +97,48 @@ include_directories(
 )
 
 # Examples
-
-## a_star
-add_executable(a_star
-  example/a_star.cpp
-)
-target_link_libraries(a_star
-  ${Boost_LIBRARIES}
-)
-
-## a_star_epsilon
-add_executable(a_star_epsilon
-  example/a_star_epsilon.cpp
-)
-target_link_libraries(a_star_epsilon
-  ${Boost_LIBRARIES}
-)
-
-## assignment
-add_executable(assignment
-  example/assignment.cpp
-)
-target_link_libraries(assignment
-  ${Boost_LIBRARIES}
-)
-
-## cbs
-add_executable(cbs
-  example/cbs.cpp
-)
-target_link_libraries(cbs
-  ${Boost_LIBRARIES}
-  yaml-cpp
-)
-
-## cbs_ta
-add_executable(cbs_ta
-  example/cbs_ta.cpp
-)
-target_link_libraries(cbs_ta
-  ${Boost_LIBRARIES}
-  yaml-cpp
-)
+#
+### a_star
+#add_executable(a_star
+#  example/a_star.cpp
+#)
+#target_link_libraries(a_star
+#  ${Boost_LIBRARIES}
+#)
+#
+### a_star_epsilon
+#add_executable(a_star_epsilon
+#  example/a_star_epsilon.cpp
+#)
+#target_link_libraries(a_star_epsilon
+#  ${Boost_LIBRARIES}
+#)
+#
+### assignment
+#add_executable(assignment
+#  example/assignment.cpp
+#)
+#target_link_libraries(assignment
+#  ${Boost_LIBRARIES}
+#)
+#
+### cbs
+#add_executable(cbs
+#  example/cbs.cpp
+#)
+#target_link_libraries(cbs
+#  ${Boost_LIBRARIES}
+#  yaml-cpp
+#)
+#
+### cbs_ta
+#add_executable(cbs_ta
+#  example/cbs_ta.cpp
+#)
+#target_link_libraries(cbs_ta
+#  ${Boost_LIBRARIES}
+#  yaml-cpp
+#)
 #
 ### ecbs
 #add_executable(ecbs
@@ -157,38 +157,38 @@ target_link_libraries(cbs_ta
 #  ${Boost_LIBRARIES}
 #  yaml-cpp
 #)
-
-## next_best_assignment
-add_executable(next_best_assignment
-  example/next_best_assignment.cpp
-)
-target_link_libraries(next_best_assignment
-  ${Boost_LIBRARIES}
-  yaml-cpp
-)
-
-## sipp
-add_executable(sipp
-  example/sipp.cpp
-)
-target_link_libraries(sipp
-  ${Boost_LIBRARIES}
-  yaml-cpp
-)
-
-## mapf_prioritized_sipp
-add_executable(mapf_prioritized_sipp
-  example/mapf_prioritized_sipp.cpp
-)
-target_link_libraries(mapf_prioritized_sipp
-  ${Boost_LIBRARIES}
-  yaml-cpp
-)
+#
+### next_best_assignment
+#add_executable(next_best_assignment
+#  example/next_best_assignment.cpp
+#)
+#target_link_libraries(next_best_assignment
+#  ${Boost_LIBRARIES}
+#  yaml-cpp
+#)
+#
+### sipp
+#add_executable(sipp
+#  example/sipp.cpp
+#)
+#target_link_libraries(sipp
+#  ${Boost_LIBRARIES}
+#  yaml-cpp
+#)
+#
+### mapf_prioritized_sipp
+#add_executable(mapf_prioritized_sipp
+#  example/mapf_prioritized_sipp.cpp
+#)
+#target_link_libraries(mapf_prioritized_sipp
+#  ${Boost_LIBRARIES}
+#  yaml-cpp
+#)
 
 ## wampf
 add_executable(wampf
   example/wampf.cpp
-)
+        )
 target_link_libraries(wampf
   ${Boost_LIBRARIES}
   yaml-cpp

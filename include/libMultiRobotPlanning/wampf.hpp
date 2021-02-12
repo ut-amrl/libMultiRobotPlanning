@@ -18,7 +18,7 @@ class WAMPF {
 
  private:
   JointPath pi_;
-  std::vector<Window> W_;
+  std::vector<std::unique_ptr<Window>> W_;
   WAMPFImplementation impl_;
 
  public:
@@ -26,32 +26,30 @@ class WAMPF {
         const JointState& start, const JointState& goal)
       : pi_(), W_(), impl_(dimx, dimy, obstacles, start, goal, &pi_) {
     pi_ = IndividualPlanner(dimx, dimy, obstacles, start, goal).Search();
-    W_ = {};
-    std::cout << "Individual space plan: " << pi_;
   }
 
   void RecWAMPF() {
     for (int i = 0; i < static_cast<int>(W_.size()); ++i) {
-      auto& wk = W_[i];
-      if (IsOverlappingAnotherWindow(wk)) {
-        auto wk_copy = std::move(wk);
+      //      auto& wk = *W_[i];
+      if (IsOverlappingAnotherWindow(*W_[i])) {
+        // auto wk_copy = std::move(wk);
+        std::unique_ptr<Window> wk_copy = std::move(W_[i]);
         W_.erase(W_.begin() + i);
         --i;
         PlanInOverlapWindows(std::move(wk_copy));
         continue;
       }
-      impl_.GrowAndReplanIn(&wk);
+      impl_.GrowAndReplanIn(W_[i]);
     }
 
     auto collision_res = impl_.FirstCollisionWindow();
     while (collision_res) {
-      W_.emplace_back(std::move(*collision_res));
-      PlanInOverlapWindows(W_.back());
-      collision_res = impl_.FirstCollisionWindow();
+      PlanInOverlapWindows(std::move(*collision_res));
+      collision_res = impl_.FirstCollisionWindow();  // ADD STD::MOVE
     }
 
     for (int i = 0; i < static_cast<int>(W_.size()); ++i) {
-      if (W_[i].ShouldQuit()) {
+      if ((*W_[i]).ShouldQuit()) {
         W_.erase(W_.begin() + i);
         --i;
       }
@@ -67,23 +65,23 @@ class WAMPF {
  private:
   bool IsOverlappingAnotherWindow(const Window& wk) {
     for (const auto& wp : W_) {
-      if (wp != wk && wk.SuccessorOverlaps(wp)) {
+      if (*wp != wk && wk.SuccessorOverlaps(*wp)) {
         return true;
       }
     }
     return false;
   }
 
-  void PlanInOverlapWindows(Window w) {
+  void PlanInOverlapWindows(std::unique_ptr<Window> w) {
     for (int i = 0; i < static_cast<int>(W_.size()); ++i) {
-      if (w.Overlaps(W_[i])) {
-        w = w.Merge(W_[i]);
+      if (w->Overlaps(*W_[i])) {
+        w = w->Merge(*W_[i]);
         W_.erase(W_.begin() + i);
         --i;
       }
     }
     W_.emplace_back(std::move(w));
-    impl_.PlanIn(&W_.back());
+    impl_.PlanIn(W_.back());
   }
 };
 

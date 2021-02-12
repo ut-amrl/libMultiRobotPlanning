@@ -152,7 +152,7 @@ struct Window {
 
   bool ShouldQuit() const { return false; }
 
-  Window Merge(const Window& o) const {
+  std::unique_ptr<Window> Merge(const Window& o) const {
     int min_x = std::min(env_view_.min_pos_.x, o.env_view_.min_pos_.x);
     int max_x = std::max(env_view_.max_pos_.x, o.env_view_.max_pos_.x);
     int min_y = std::min(env_view_.min_pos_.y, o.env_view_.min_pos_.y);
@@ -167,10 +167,10 @@ struct Window {
     joined_agent_idxs.resize(std::distance(joined_agent_idxs.begin(), it));
     std::sort(joined_agent_idxs.begin(), joined_agent_idxs.end());
 
-    return {{min_x, min_y},
-            {max_x, max_y},
-            joined_agent_idxs,
-            env_view_.getEnvPtr()};
+    std::unique_ptr<Window> new_w =
+        std::make_unique<Window>(State(min_x, min_y), State(max_x, max_y),
+                                 joined_agent_idxs, env_view_.getEnvPtr());
+    return new_w;
   }
 };
 

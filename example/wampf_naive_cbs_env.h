@@ -242,7 +242,7 @@ class EnvironmentView {
 
   const Environment *getEnvPtr() const { return env_; }
 
-  void updateGoals(std::vector<Location> goals) { goals_ = std::move(goals); }
+  void updateGoals(std::vector<Location> goals) { goals_ = goals; }
 
   EnvironmentView(Location min_pos, Location max_pos,
                   std::vector<Location> goals, const Environment *environment)
@@ -286,8 +286,6 @@ class EnvironmentView {
            s.time > lastGoalConstraint_;
   }
 
-  // TODO(aiyer): check if neighbors are inside the current window, if not,
-  // throw them out.
   void getNeighbors(
       const CBSState &s,
       std::vector<Neighbor<CBSState, CBSAction, int> > &neighbors) const {
@@ -348,10 +346,15 @@ class EnvironmentView {
   }
 
  private:
+  bool CBSStateWindowBoundsCheck(const CBSState &s) const {
+    return s.x >= min_pos_.x && s.x <= max_pos_.x && s.y >= min_pos_.y &&
+           s.y <= max_pos_.y;
+  }
+
   bool CBSStateValid(const CBSState &s) const {
     NP_NOT_NULL(constraints_);
     const auto &con = constraints_->vertexConstraints;
-    return env_->CBSStateBoundsCheck(s) &&
+    return env_->CBSStateBoundsCheck(s) && CBSStateWindowBoundsCheck(s) &&
            con.find(VertexConstraint(s.time, s.x, s.y)) == con.end();
   }
 
@@ -367,11 +370,11 @@ template <typename Location>
 class NaiveCBSEnvironment {
  public:
   NaiveCBSEnvironment(size_t dimx, size_t dimy,
-                      const std::unordered_set<Location> &obstacles,
+                      std::unordered_set<Location> obstacles,
                       std::vector<Location> goals)
       : dimx_(dimx),
         dimy_(dimy),
-        obstacles_(obstacles),
+        obstacles_(std::move(obstacles)),
         goals_(std::move(goals)) {}
 
   NaiveCBSEnvironment(const NaiveCBSEnvironment &) = delete;
@@ -460,18 +463,18 @@ class NaiveCBSEnvironment {
       size_t agentIdx,
       const std::vector<PlanResult<CBSState, CBSAction, int> > &solution,
       size_t t) const {
-    assert(agentIdx < solution.size());
+    NP_CHECK(agentIdx < solution.size());
     if (t < solution[agentIdx].states.size()) {
       return solution[agentIdx].states[t].first;
     }
-    assert(!solution[agentIdx].states.empty());
+    NP_CHECK(!solution[agentIdx].states.empty());
     return solution[agentIdx].states.back().first;
   }
 
  private:
   int dimx_;
   int dimy_;
-  const std::unordered_set<Location> &obstacles_;
+  std::unordered_set<Location> obstacles_;
   std::vector<Location> goals_;
 };
 }  // namespace naive_cbs_wampf_impl

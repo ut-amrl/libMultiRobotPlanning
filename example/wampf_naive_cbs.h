@@ -8,6 +8,7 @@
 
 #include "wampf_individual.h"
 #include "wampf_naive_cbs_env.h"
+#include "four_grid_env_view.h"
 #include "wampf_state.h"
 #include "wampf_window.h"
 
@@ -25,8 +26,8 @@ using Cost = int;
 using JointState = std::vector<State>;
 using JointPath = std::vector<PlanResult<State, IndividualSpaceAction, Cost>>;
 using Env = naive_cbs_wampf_impl::NaiveCBSEnvironment<State>;
-using EnvView = naive_cbs_wampf_impl::EnvironmentView<
-    naive_cbs_wampf_impl::NaiveCBSEnvironment<State>, State>;
+using EnvView = naive_cbs_wampf_impl::FourConnectedEnvironmentView<
+    naive_cbs_wampf_impl::NaiveCBSEnvironment<State>>;
 
 using Window = libMultiRobotPlanning::Window<Env, EnvView>;
 
@@ -97,7 +98,7 @@ class NaiveACBSImplementation {
       goal_state.emplace_back(GetState(idx, goal_idx));
     }
 
-    w->env_view_.updateGoals(goal_state);
+    w->env_view_.UpdateGoals(goal_state);
 
     std::vector<PlanResult<naive_cbs_wampf_impl::CBSState,
                            naive_cbs_wampf_impl::CBSAction, int>>

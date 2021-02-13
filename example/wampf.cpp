@@ -26,8 +26,8 @@ using libMultiRobotPlanning::State;
 using wampf_impl::NaiveACBSImplementation;
 
 using Env = naive_cbs_wampf_impl::NaiveCBSEnvironment<State>;
-using EnvView = naive_cbs_wampf_impl::EnvironmentView<
-    naive_cbs_wampf_impl::NaiveCBSEnvironment<State>, State>;
+using EnvView = naive_cbs_wampf_impl::FourConnectedEnvironmentView<
+    naive_cbs_wampf_impl::NaiveCBSEnvironment<State>>;
 
 using Window = libMultiRobotPlanning::Window<Env, EnvView>;
 

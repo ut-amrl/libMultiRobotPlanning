@@ -6,10 +6,10 @@
 #include <gtest/gtest.h>
 
 #include <libMultiRobotPlanning/wampf_utils.hpp>
-
-#include "wampf_individual.h"
-#include "wampf_state.h"
-#include "wampf_window.h"
+#include "../../example/four_grid_env_view.h"
+#include "../../example/wampf_individual.h"
+#include "../../example/wampf_state.h"
+#include "../../example/wampf_window.h"
 
 using libMultiRobotPlanning::IndividualSpaceAction;
 using libMultiRobotPlanning::PlanResult;
@@ -147,6 +147,10 @@ struct TestEnvView {
   TestEnvView(libMultiRobotPlanning::State&, libMultiRobotPlanning::State&,
               std::vector<libMultiRobotPlanning::State>, const TestEnv*)
       : min_pos_(0, 0), max_pos_(0, 0) {}
+
+  bool Contains(const State& s) const {
+    return true;
+  }
 
   TestEnvView(const TestEnvView&) = default;
   TestEnvView(TestEnvView&&) = default;

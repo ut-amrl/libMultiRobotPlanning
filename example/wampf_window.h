@@ -5,8 +5,8 @@
 
 #include "wampf_state.h"
 
-#include "wampf_naive_cbs_env.h"
 #include "four_grid_env_view.h"
+#include "wampf_naive_cbs_env.h"
 namespace libMultiRobotPlanning {
 
 template <typename Env, typename EnvView, int kStartRadius = 2,
@@ -25,13 +25,12 @@ struct Window {
 
   Window(State state, const std::vector<size_t> agent_idxs, const Env* env)
       : agent_idxs_(agent_idxs),
-        env_view_(state, state, std::vector<State>(), env),
-        cbs_(&env_view_) {}
+        env_view_(state, std::vector<State>(), env),
+        cbs_(&env_view_) {
+  }
 
-  Window(const std::vector<size_t> agent_idxs, EnvView view) :
-          agent_idxs_(agent_idxs),
-          env_view_(std::move(view)),
-          cbs_(&env_view_) {}
+  Window(const std::vector<size_t> agent_idxs, EnvView view)
+      : agent_idxs_(agent_idxs), env_view_(std::move(view)), cbs_(&env_view_) {}
 
   Window(State min_pos, State max_pos, const std::vector<size_t> agent_idxs,
          const Env* env)
@@ -56,9 +55,7 @@ struct Window {
             agent_idxs_.end());
   }
 
-  bool Contains(const State& s) const {
-    return env_view_.Contains(s);
-  }
+  bool Contains(const State& s) const { return env_view_.Contains(s); }
 
   bool OverlappingAgents(const Window& other) const {
     for (const auto& a : other.agent_idxs_) {
@@ -85,9 +82,7 @@ struct Window {
     return env_view_.SuccessorOverlaps(other.env_view_);
   }
 
-  void Grow() {
-    env_view_.Grow();
-  }
+  void Grow() { env_view_.Grow(); }
 
   bool ShouldQuit() const { return false; }
 
@@ -101,7 +96,8 @@ struct Window {
     joined_agent_idxs.resize(std::distance(joined_agent_idxs.begin(), it));
     std::sort(joined_agent_idxs.begin(), joined_agent_idxs.end());
 
-    return std::make_unique<Window>(joined_agent_idxs, env_view_.Merge(o.env_view_));
+    return std::make_unique<Window>(joined_agent_idxs,
+                                    env_view_.Merge(o.env_view_));
   }
 };
 

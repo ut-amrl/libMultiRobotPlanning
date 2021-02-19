@@ -61,7 +61,7 @@ set(ALL_SOURCE_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/example/shortest_path_heuristic.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/example/sipp.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/example/wampf.cpp
-        test/wampf/wampf_tester.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/test/wampf/wampf_tester.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/example/wampf_individual.h
   ${CMAKE_CURRENT_SOURCE_DIR}/example/wampf_window.h
   ${CMAKE_CURRENT_SOURCE_DIR}/example/wampf_state.h
@@ -70,6 +70,7 @@ set(ALL_SOURCE_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/example/wampf_environment_view.h
         ${CMAKE_CURRENT_SOURCE_DIR}/example/four_grid_env_view.h
   ${CMAKE_CURRENT_SOURCE_DIR}/example/timer.hpp
+
 )
 
 add_custom_target(clang-format

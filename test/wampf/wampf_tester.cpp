@@ -12,6 +12,7 @@
 #include "../../example/wampf_window.h"
 
 using libMultiRobotPlanning::IndividualSpaceAction;
+using libMultiRobotPlanning::Neighbor;
 using libMultiRobotPlanning::PlanResult;
 using libMultiRobotPlanning::State;
 using libMultiRobotPlanning::Window;
@@ -19,6 +20,12 @@ using libMultiRobotPlanning::wampf::GetWindowStartGoalIndexes;
 using libMultiRobotPlanning::wampf::InsertPathRepair;
 using PR = PlanResult<State, IndividualSpaceAction, int>;
 using Action = IndividualSpaceAction;
+using naive_cbs_wampf_impl::CBSAction;
+using naive_cbs_wampf_impl::CBSState;
+using naive_cbs_wampf_impl::Conflict;
+using naive_cbs_wampf_impl::Constraints;
+using naive_cbs_wampf_impl::FourConnectedEnvironmentView;
+using naive_cbs_wampf_impl::NaiveCBSEnvironment;
 
 void VerifyPathIntegrity(const PR& result) {
   EXPECT_EQ(result.actions.size() + 1, result.states.size());
@@ -136,31 +143,8 @@ TEST(InsertShorterRepair, UpDownToStraight2) {
   VerifyPathIntegrity(result);
 }
 
-struct TestEnv {
-  TestEnv() = default;
-};
-struct TestEnvView {
-  State min_pos_;
-  State max_pos_;
-
-  TestEnvView() : min_pos_(0, 0), max_pos_(0, 0) {}
-  TestEnvView(libMultiRobotPlanning::State&, libMultiRobotPlanning::State&,
-              std::vector<libMultiRobotPlanning::State>, const TestEnv*)
-      : min_pos_(0, 0), max_pos_(0, 0) {}
-
-  bool Contains(const State& s) const {
-    return true;
-  }
-
-  TestEnvView(const TestEnvView&) = default;
-  TestEnvView(TestEnvView&&) = default;
-
-  TestEnvView& operator=(const TestEnvView&) = default;
-  TestEnvView& operator=(TestEnvView&&) = default;
-};
-
-using W = Window<TestEnv, TestEnvView, 1, 1>;
-
+using W = Window<NaiveCBSEnvironment<State>, FourConnectedEnvironmentView<NaiveCBSEnvironment<State>,1,1>,1,1>;
+NaiveCBSEnvironment<State> env(10, 10, {}, {});
 TEST(WindowIntersection, SimpleWindow) {
   PR p1;
   p1.states = {{{0, 0}, 0}, {{0, 1}, 1}, {{0, 2}, 2},
@@ -192,8 +176,6 @@ TEST(WindowIntersection, SimpleWindow) {
   p3.cost = 0;
   p3.fmin = 0;
 
-  TestEnv env;
-
   W w(State(0, 3), std::vector<size_t>({0, 1}), &env);
 
   EXPECT_TRUE(w.HasAgent(0));
@@ -208,3 +190,49 @@ TEST(WindowIntersection, SimpleWindow) {
   const auto expected2 = std::pair<int, int>(1, 3);
   EXPECT_EQ(res.back(), expected2);
 }
+
+TEST(FourConnectedEnvironmentView, Overlaps) {
+  FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view(
+      {0, 0}, {5, 5}, std::vector<State>(), &env);
+  FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view_other(
+      {4, 4}, {6, 6}, std::vector<State>(), &env);
+  FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view_three(
+      {6, 6}, {9, 9}, std::vector<State>(), &env);
+
+  EXPECT_TRUE(env_view.Overlaps(env_view_other));
+  EXPECT_TRUE(env_view_other.Overlaps(env_view));
+  EXPECT_TRUE(env_view_other.Overlaps(env_view_three));
+  EXPECT_FALSE(env_view.Overlaps(env_view_three));
+}
+
+TEST(FourConnectedEnvironmentView, SuccessorOverlaps) {
+  FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view(
+      {0, 0}, {2, 2}, std::vector<State>(), &env);
+  FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view_other(
+      {4, 4}, {6, 6}, std::vector<State>(), &env);
+  FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view_three(
+          {3, 3}, {9, 9}, std::vector<State>(), &env);
+
+  EXPECT_FALSE(env_view.SuccessorOverlaps(env_view_other));
+  EXPECT_FALSE(env_view_other.SuccessorOverlaps(env_view));
+  EXPECT_TRUE(env_view.SuccessorOverlaps(env_view_three));
+}
+
+TEST(FourConnectedEnvironmentView, Merge) {
+  FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view(
+      {1, 1}, {2, 2}, std::vector<State>(), &env);
+  FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view_other(
+      {0, 4}, {6, 6}, std::vector<State>(), &env);
+  FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> expected(
+      {0, 1}, {6, 6}, std::vector<State>(), &env);
+
+  EXPECT_TRUE(expected == env_view.Merge(env_view_other));
+}
+// test if it goes out of view range, if there is a vertex constraint,
+// if there is an edge constraint
+// TEST(FourConnectedEnvironmentView, getNeighbors) {
+//  TestEnv* env;
+//  FourConnectedEnvironmentView<TestEnv> env_view({1,1}, {2,2},
+//  std::vector<State>(), env); std::vector<Neighbor<CBSState, CBSAction, int>>
+//  neighbors; CBSState s(3,2,2);
+//}

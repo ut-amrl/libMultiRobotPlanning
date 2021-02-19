@@ -6,9 +6,9 @@
 #include <libMultiRobotPlanning/cbs.hpp>
 #include <libMultiRobotPlanning/wampf_utils.hpp>
 
+#include "four_grid_env_view.h"
 #include "wampf_individual.h"
 #include "wampf_naive_cbs_env.h"
-#include "four_grid_env_view.h"
 #include "wampf_state.h"
 #include "wampf_window.h"
 

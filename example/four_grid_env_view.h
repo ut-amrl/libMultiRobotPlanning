@@ -5,18 +5,18 @@
 #include <boost/functional/hash.hpp>
 
 #include <libMultiRobotPlanning/cbs.hpp>
-#include "wampf_naive_cbs_env.h"
-#include "wampf_environment_view.h"
-#include "wampf_state.h"
 #include <libMultiRobotPlanning/neighbor.hpp>
 #include <libMultiRobotPlanning/planresult.hpp>
+#include "wampf_environment_view.h"
+#include "wampf_naive_cbs_env.h"
+#include "wampf_state.h"
 
 using State = libMultiRobotPlanning::State;
 
 namespace naive_cbs_wampf_impl {
-template <typename Environment, int kStartRadius = 2,
-        int kRadiusGrowth = 1>
-class FourConnectedEnvironmentView : naive_cbs_wampf_impl::EnvironmentView<Environment, State> {
+template <typename Environment, int kStartRadius = 2, int kRadiusGrowth = 1>
+class FourConnectedEnvironmentView
+    : naive_cbs_wampf_impl::EnvironmentView<Environment, State> {
  private:
   const Environment* env_;
   std::vector<State> goals_;
@@ -32,38 +32,58 @@ class FourConnectedEnvironmentView : naive_cbs_wampf_impl::EnvironmentView<Envir
 
   void UpdateGoals(std::vector<State> goals) { goals_ = goals; }
 
-  FourConnectedEnvironmentView(State min_pos, State max_pos,
-                  std::vector<State> goals, const Environment* environment)
-      : env_(environment),
-        goals_(std::move(goals)),
-        agentIdx_(0),
-        constraints_(nullptr),
-        lastGoalConstraint_(-1),
-        highLevelExpanded_(0),
-        lowLevelExpanded_(0),
-        min_pos_(min_pos),
-        max_pos_(max_pos) {
+  FourConnectedEnvironmentView(State pos,
+                               std::vector<State> goals,
+                               const Environment* environment)
+          : env_(environment),
+            goals_(std::move(goals)),
+            agentIdx_(0),
+            constraints_(nullptr),
+            lastGoalConstraint_(-1),
+            highLevelExpanded_(0),
+            lowLevelExpanded_(0),
+            min_pos_(pos),
+            max_pos_(pos) {
     min_pos_.x -= kStartRadius;
     min_pos_.y -= kStartRadius;
     max_pos_.x += kStartRadius;
     max_pos_.y += kStartRadius;
   }
 
+  FourConnectedEnvironmentView(State min_pos, State max_pos,
+                               std::vector<State> goals,
+                               const Environment* environment)
+          : env_(environment),
+            goals_(std::move(goals)),
+            agentIdx_(0),
+            constraints_(nullptr),
+            lastGoalConstraint_(-1),
+            highLevelExpanded_(0),
+            lowLevelExpanded_(0),
+            min_pos_(min_pos),
+            max_pos_(max_pos) {
+  }
+
   bool operator==(const FourConnectedEnvironmentView& other) const {
-    return (min_pos_ == other.min_pos_) &&
-           (max_pos_ == other.max_pos_);
+    return (min_pos_ == other.min_pos_) && (max_pos_ == other.max_pos_);
   }
 
   FourConnectedEnvironmentView(const FourConnectedEnvironmentView&) = default;
   FourConnectedEnvironmentView(FourConnectedEnvironmentView&&) = default;
 
-  FourConnectedEnvironmentView& operator=(const FourConnectedEnvironmentView& o) = default;
-  FourConnectedEnvironmentView& operator=(FourConnectedEnvironmentView&) = default;
+  FourConnectedEnvironmentView& operator=(
+      const FourConnectedEnvironmentView& o) = default;
+  FourConnectedEnvironmentView& operator=(FourConnectedEnvironmentView&) =
+      default;
 
   int admissibleHeuristic(const CBSState& s) const {
     NP_CHECK_LT(agentIdx_, goals_.size());
     return std::abs(s.x - goals_[agentIdx_].x) +
            std::abs(s.y - goals_[agentIdx_].y);
+  }
+
+  void Print() {
+    std::cout << "min_pos_: " << min_pos_ << "\nmax_pos_: " << max_pos_ << "\n";
   }
 
   bool Contains(const State& s) const {
@@ -79,14 +99,10 @@ class FourConnectedEnvironmentView : naive_cbs_wampf_impl::EnvironmentView<Envir
   }
 
   bool SuccessorOverlaps(const FourConnectedEnvironmentView& other) const {
-    State min_growth(min_pos_.x - kRadiusGrowth,
-                     min_pos_.y - kRadiusGrowth);
-    State max_growth(max_pos_.x + kRadiusGrowth,
-                     max_pos_.y + kRadiusGrowth);
-    State off1(min_pos_.x - kRadiusGrowth,
-               max_pos_.y + kRadiusGrowth);
-    State off2(max_pos_.x + kRadiusGrowth,
-               min_pos_.y - kRadiusGrowth);
+    State min_growth(min_pos_.x - kRadiusGrowth, min_pos_.y - kRadiusGrowth);
+    State max_growth(max_pos_.x + kRadiusGrowth, max_pos_.y + kRadiusGrowth);
+    State off1(min_pos_.x - kRadiusGrowth, max_pos_.y + kRadiusGrowth);
+    State off2(max_pos_.x + kRadiusGrowth, min_pos_.y - kRadiusGrowth);
 
     // Check if our four corners are inside their box.
     if (other.Contains(min_growth) || other.Contains(max_growth) ||
@@ -101,9 +117,8 @@ class FourConnectedEnvironmentView : naive_cbs_wampf_impl::EnvironmentView<Envir
                      other.min_pos_.y - kRadiusGrowth);
 
     // Check if their four corners are inside our box.
-    if (Contains(other.min_pos_) ||
-        Contains(other.max_pos_) || Contains(other_off1) ||
-        Contains(other_off2)) {
+    if (Contains(other.min_pos_) || Contains(other.max_pos_) ||
+        Contains(other_off1) || Contains(other_off2)) {
       return true;
     }
     return false;
@@ -114,9 +129,9 @@ class FourConnectedEnvironmentView : naive_cbs_wampf_impl::EnvironmentView<Envir
     State off2(max_pos_.x, min_pos_.y);
 
     // Check if our four corners are inside their box.
-    if (other.Contains(min_pos_) ||
-        other.Contains(max_pos_) || other.Contains(off1) ||
-        other.Contains(off2)) {
+    if (other.Contains(min_pos_) || other.Contains(max_pos_) ||
+        other.Contains(off1) || other.Contains(off2)) {
+//      printf("%d %d %d %d\n", other.Contains(min_pos_),other.Contains(max_pos_),other.Contains(off1) , other.Contains(off2));
       return true;
     }
 
@@ -124,21 +139,22 @@ class FourConnectedEnvironmentView : naive_cbs_wampf_impl::EnvironmentView<Envir
     State other_off2(other.max_pos_.x, other.min_pos_.y);
 
     // Check if their four corners are inside our box.
-    if (Contains(other.min_pos_) ||
-        Contains(other.max_pos_) || Contains(other_off1) ||
-        Contains(other_off2)) {
+    if (Contains(other.min_pos_) || Contains(other.max_pos_) ||
+        Contains(other_off1) || Contains(other_off2)) {
       return true;
     }
     return false;
   }
 
-  FourConnectedEnvironmentView Merge(const FourConnectedEnvironmentView& o) const {
+  FourConnectedEnvironmentView Merge(
+      const FourConnectedEnvironmentView& o) const {
     int min_x = std::min(min_pos_.x, o.min_pos_.x);
     int max_x = std::max(max_pos_.x, o.max_pos_.x);
     int min_y = std::min(min_pos_.y, o.min_pos_.y);
     int max_y = std::max(max_pos_.y, o.max_pos_.y);
 
-    return {State(min_x, min_y), State(max_x, max_y), std::vector<State>(), env_};
+    return {State(min_x, min_y), State(max_x, max_y), std::vector<State>(),
+            env_};
   }
 
   void setLowLevelContext(size_t agentIdx, const Constraints* constraints) {
@@ -202,12 +218,13 @@ class FourConnectedEnvironmentView : naive_cbs_wampf_impl::EnvironmentView<Envir
 
   bool getFirstConflict(
       const std::vector<PlanResult<CBSState, CBSAction, int>>& solution,
-      Conflict& result) {
+      Conflict& result) const {
     return env_->getFirstConflict(solution, result);
   }
 
   void createConstraintsFromConflict(
-      const Conflict& conflict, std::map<size_t, Constraints>& constraints) {
+      const Conflict& conflict,
+      std::map<size_t, Constraints>& constraints) const {
     env_->createConstraintsFromConflict(conflict, constraints);
   }
 

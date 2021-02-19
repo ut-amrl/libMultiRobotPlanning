@@ -32,18 +32,17 @@ class FourConnectedEnvironmentView
 
   void UpdateGoals(std::vector<State> goals) { goals_ = goals; }
 
-  FourConnectedEnvironmentView(State pos,
-                               std::vector<State> goals,
+  FourConnectedEnvironmentView(State pos, std::vector<State> goals,
                                const Environment* environment)
-          : env_(environment),
-            goals_(std::move(goals)),
-            agentIdx_(0),
-            constraints_(nullptr),
-            lastGoalConstraint_(-1),
-            highLevelExpanded_(0),
-            lowLevelExpanded_(0),
-            min_pos_(pos),
-            max_pos_(pos) {
+      : env_(environment),
+        goals_(std::move(goals)),
+        agentIdx_(0),
+        constraints_(nullptr),
+        lastGoalConstraint_(-1),
+        highLevelExpanded_(0),
+        lowLevelExpanded_(0),
+        min_pos_(pos),
+        max_pos_(pos) {
     min_pos_.x -= kStartRadius;
     min_pos_.y -= kStartRadius;
     max_pos_.x += kStartRadius;
@@ -53,16 +52,15 @@ class FourConnectedEnvironmentView
   FourConnectedEnvironmentView(State min_pos, State max_pos,
                                std::vector<State> goals,
                                const Environment* environment)
-          : env_(environment),
-            goals_(std::move(goals)),
-            agentIdx_(0),
-            constraints_(nullptr),
-            lastGoalConstraint_(-1),
-            highLevelExpanded_(0),
-            lowLevelExpanded_(0),
-            min_pos_(min_pos),
-            max_pos_(max_pos) {
-  }
+      : env_(environment),
+        goals_(std::move(goals)),
+        agentIdx_(0),
+        constraints_(nullptr),
+        lastGoalConstraint_(-1),
+        highLevelExpanded_(0),
+        lowLevelExpanded_(0),
+        min_pos_(min_pos),
+        max_pos_(max_pos) {}
 
   bool operator==(const FourConnectedEnvironmentView& other) const {
     return (min_pos_ == other.min_pos_) && (max_pos_ == other.max_pos_);
@@ -82,8 +80,9 @@ class FourConnectedEnvironmentView
            std::abs(s.y - goals_[agentIdx_].y);
   }
 
-  void Print() {
-    std::cout << "min_pos_: " << min_pos_ << "\nmax_pos_: " << max_pos_ << "\n";
+  friend std::ostream& operator<<(std::ostream& os,
+                                  const FourConnectedEnvironmentView& c) {
+    return os << "min_pos_: " << c.min_pos_ << ", max_pos_: " << c.max_pos_;
   }
 
   bool Contains(const State& s) const {
@@ -131,7 +130,6 @@ class FourConnectedEnvironmentView
     // Check if our four corners are inside their box.
     if (other.Contains(min_pos_) || other.Contains(max_pos_) ||
         other.Contains(off1) || other.Contains(off2)) {
-//      printf("%d %d %d %d\n", other.Contains(min_pos_),other.Contains(max_pos_),other.Contains(off1) , other.Contains(off2));
       return true;
     }
 
@@ -181,6 +179,10 @@ class FourConnectedEnvironmentView
     neighbors.clear();
     {
       CBSState n(s.time + 1, s.x, s.y);
+      //      printf("Entering wait\n");
+      //      if (!CBSStateValid(n)) printf("CBSStateValid wait is false\n");
+      //      if (!TransitionValid(s, n)) printf("TransitionValid wait is
+      //      false\n"); printf("leafing wait\n");
       if (CBSStateValid(n) && TransitionValid(s, n)) {
         neighbors.emplace_back(
             Neighbor<CBSState, CBSAction, int>(n, CBSAction::Wait, 1));
@@ -195,6 +197,11 @@ class FourConnectedEnvironmentView
     }
     {
       CBSState n(s.time + 1, s.x + 1, s.y);
+      //      printf("Entering right\n");
+      //      if (!CBSStateValid(n)) printf("CBSStateValid right is false\n");
+      //      if (!TransitionValid(s, n)) printf("TransitionValid right is
+      //      false\n"); printf("leafing right\n");
+
       if (CBSStateValid(n) && TransitionValid(s, n)) {
         neighbors.emplace_back(
             Neighbor<CBSState, CBSAction, int>(n, CBSAction::Right, 1));
@@ -244,6 +251,11 @@ class FourConnectedEnvironmentView
   bool CBSStateValid(const CBSState& s) const {
     NP_NOT_NULL(constraints_);
     const auto& con = constraints_->vertexConstraints;
+    //    if (!env_->CBSStateBoundsCheck(s)) printf("env->CBSStateBoundsCheck is
+    //    false\n"); if (!CBSStateWindowBoundsCheck(s))
+    //    printf("CBSStateWindowBoundsCheck is false\n"); if
+    //    (!(con.find(VertexConstraint(s.time, s.x, s.y)) == con.end()))
+    //    printf("vertex constraint found\n");
     return env_->CBSStateBoundsCheck(s) && CBSStateWindowBoundsCheck(s) &&
            con.find(VertexConstraint(s.time, s.x, s.y)) == con.end();
   }

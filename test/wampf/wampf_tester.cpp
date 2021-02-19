@@ -10,6 +10,7 @@
 #include "../../example/wampf_individual.h"
 #include "../../example/wampf_state.h"
 #include "../../example/wampf_window.h"
+#include "../../include/libMultiRobotPlanning/utils.hpp"
 
 using libMultiRobotPlanning::IndividualSpaceAction;
 using libMultiRobotPlanning::Neighbor;
@@ -143,8 +144,10 @@ TEST(InsertShorterRepair, UpDownToStraight2) {
   VerifyPathIntegrity(result);
 }
 
-using W = Window<NaiveCBSEnvironment<State>, FourConnectedEnvironmentView<NaiveCBSEnvironment<State>,1,1>,1,1>;
-NaiveCBSEnvironment<State> env(10, 10, {}, {});
+using W = Window<NaiveCBSEnvironment<State>,
+                 FourConnectedEnvironmentView<NaiveCBSEnvironment<State>, 1, 1>,
+                 1, 1>;
+NaiveCBSEnvironment<State> env(10, 11, {{6, 7}, {6, 9}}, {{5, 10}});
 TEST(WindowIntersection, SimpleWindow) {
   PR p1;
   p1.states = {{{0, 0}, 0}, {{0, 1}, 1}, {{0, 2}, 2},
@@ -192,30 +195,56 @@ TEST(WindowIntersection, SimpleWindow) {
 }
 
 TEST(FourConnectedEnvironmentView, Overlaps) {
-  FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view(
-      {0, 0}, {5, 5}, std::vector<State>(), &env);
-  FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view_other(
-      {4, 4}, {6, 6}, std::vector<State>(), &env);
-  FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view_three(
-      {6, 6}, {9, 9}, std::vector<State>(), &env);
+  {
+    FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view(
+        {0, 0}, {5, 5}, std::vector<State>(), &env);
+    FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view_other(
+        {4, 4}, {6, 6}, std::vector<State>(), &env);
+    FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view_three(
+        {6, 6}, {9, 9}, std::vector<State>(), &env);
 
-  EXPECT_TRUE(env_view.Overlaps(env_view_other));
-  EXPECT_TRUE(env_view_other.Overlaps(env_view));
-  EXPECT_TRUE(env_view_other.Overlaps(env_view_three));
-  EXPECT_FALSE(env_view.Overlaps(env_view_three));
+    EXPECT_TRUE(env_view.Overlaps(env_view_other));
+    EXPECT_TRUE(env_view_other.Overlaps(env_view));
+    EXPECT_TRUE(env_view_other.Overlaps(env_view_three));
+    EXPECT_FALSE(env_view.Overlaps(env_view_three));
+  }
+  {
+    FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view(
+        {2, 0}, {4, 8}, std::vector<State>(), &env);
+    FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view_other(
+        {1, 8}, {3, 9}, std::vector<State>(), &env);
+    FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view_three(
+        {3, 1}, {6, 7}, std::vector<State>(), &env);
+
+    EXPECT_TRUE(env_view.Overlaps(env_view_other));
+    EXPECT_TRUE(env_view_other.Overlaps(env_view));
+    EXPECT_TRUE(env_view.Overlaps(env_view_three));
+    EXPECT_FALSE(env_view_other.Overlaps(env_view_three));
+  }
 }
 
 TEST(FourConnectedEnvironmentView, SuccessorOverlaps) {
-  FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view(
-      {0, 0}, {2, 2}, std::vector<State>(), &env);
-  FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view_other(
-      {4, 4}, {6, 6}, std::vector<State>(), &env);
-  FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view_three(
-          {3, 3}, {9, 9}, std::vector<State>(), &env);
+  {
+    FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view(
+        {0, 0}, {2, 2}, std::vector<State>(), &env);
+    FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view_other(
+        {4, 4}, {6, 6}, std::vector<State>(), &env);
+    FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view_three(
+        {3, 3}, {9, 9}, std::vector<State>(), &env);
 
-  EXPECT_FALSE(env_view.SuccessorOverlaps(env_view_other));
-  EXPECT_FALSE(env_view_other.SuccessorOverlaps(env_view));
-  EXPECT_TRUE(env_view.SuccessorOverlaps(env_view_three));
+    EXPECT_FALSE(env_view.SuccessorOverlaps(env_view_other));
+    EXPECT_FALSE(env_view_other.SuccessorOverlaps(env_view));
+    EXPECT_TRUE(env_view.SuccessorOverlaps(env_view_three));
+  }
+  {
+    FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view(
+        {1, 8}, {3, 9}, std::vector<State>(), &env);
+    FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view_other(
+        {3, 1}, {6, 7}, std::vector<State>(), &env);
+
+    EXPECT_TRUE(env_view.SuccessorOverlaps(env_view_other));
+    EXPECT_TRUE(env_view_other.SuccessorOverlaps(env_view));
+  }
 }
 
 TEST(FourConnectedEnvironmentView, Merge) {
@@ -228,11 +257,105 @@ TEST(FourConnectedEnvironmentView, Merge) {
 
   EXPECT_TRUE(expected == env_view.Merge(env_view_other));
 }
-// test if it goes out of view range, if there is a vertex constraint,
-// if there is an edge constraint
-// TEST(FourConnectedEnvironmentView, getNeighbors) {
-//  TestEnv* env;
-//  FourConnectedEnvironmentView<TestEnv> env_view({1,1}, {2,2},
-//  std::vector<State>(), env); std::vector<Neighbor<CBSState, CBSAction, int>>
-//  neighbors; CBSState s(3,2,2);
-//}
+
+using N = Neighbor<CBSState, CBSAction, int>;
+TEST(FourConnectedEnvironmentView, getNeighbors) {
+  FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view(
+      {3, 5}, {6, 12}, {{5, 10}}, &env);
+  std::vector<N> neighbors;
+  Constraints constraints;
+
+  // for CBSState(2,3,10) only neighbor should be CBSState(3,4,10) and
+  // CBSState(3,3,10)
+  constraints.vertexConstraints.insert({3, 3, 9});
+
+  // for CBSState(2,6,5), only neighbor is CBSState(3,5,5)
+  constraints.vertexConstraints.insert({3, 6, 5});
+  constraints.edgeConstraints.insert({2, 6, 5, 6, 6});
+
+  // for CBSState(2,6,8), 2 neighbors: CBSState(3,6,8) and CBSState(3,5,8)
+  // because of obstacles in env
+  constraints.edgeConstraints.insert({2, 5, 8, 4, 8});
+
+  env_view.setLowLevelContext(0, &constraints);
+
+  // tests vertex constraints, environment bounds, and environment view bounds
+  env_view.getNeighbors({2, 3, 10}, neighbors);
+  NP_CHECK_EQ(neighbors.size(), 2);
+  EXPECT_TRUE(std::count(neighbors.begin(), neighbors.end(),
+                         N(CBSState(3, 4, 10), CBSAction::Right, 1)));
+  EXPECT_TRUE(std::count(neighbors.begin(), neighbors.end(),
+                         N(CBSState(3, 3, 10), CBSAction::Wait, 1)));
+  EXPECT_FALSE(std::count(neighbors.begin(), neighbors.end(),
+                          N(CBSState(3, 3, 9), CBSAction::Down, 1)));
+  EXPECT_FALSE(std::count(neighbors.begin(), neighbors.end(),
+                          N(CBSState(3, 3, 11), CBSAction::Up, 1)));
+  EXPECT_FALSE(std::count(neighbors.begin(), neighbors.end(),
+                          N(CBSState(3, 2, 10), CBSAction::Left, 1)));
+
+  // tests vertex constraints, edge constraints, and environment view bounds
+  env_view.getNeighbors({2, 6, 5}, neighbors);
+  NP_CHECK_EQ(neighbors.size(), 1);
+  EXPECT_TRUE(std::count(neighbors.begin(), neighbors.end(),
+                         N(CBSState(3, 5, 5), CBSAction::Left, 1)));
+  EXPECT_FALSE(std::count(neighbors.begin(), neighbors.end(),
+                          N(CBSState(3, 6, 5), CBSAction::Wait, 1)));
+  EXPECT_FALSE(std::count(neighbors.begin(), neighbors.end(),
+                          N(CBSState(3, 7, 5), CBSAction::Right, 1)));
+  EXPECT_FALSE(std::count(neighbors.begin(), neighbors.end(),
+                          N(CBSState(3, 6, 4), CBSAction::Down, 1)));
+  EXPECT_FALSE(std::count(neighbors.begin(), neighbors.end(),
+                          N(CBSState(3, 6, 6), CBSAction::Up, 1)));
+
+  // tests functionality without any constraints
+  env_view.getNeighbors({2, 4, 7}, neighbors);
+  NP_CHECK_EQ(neighbors.size(), 5);
+  EXPECT_TRUE(std::count(neighbors.begin(), neighbors.end(),
+                         N(CBSState(3, 4, 8), CBSAction::Up, 1)));
+  EXPECT_TRUE(std::count(neighbors.begin(), neighbors.end(),
+                         N(CBSState(3, 4, 6), CBSAction::Down, 1)));
+  EXPECT_TRUE(std::count(neighbors.begin(), neighbors.end(),
+                         N(CBSState(3, 4, 7), CBSAction::Wait, 1)));
+  EXPECT_TRUE(std::count(neighbors.begin(), neighbors.end(),
+                         N(CBSState(3, 3, 7), CBSAction::Left, 1)));
+  EXPECT_TRUE(std::count(neighbors.begin(), neighbors.end(),
+                         N(CBSState(3, 5, 7), CBSAction::Right, 1)));
+
+  // tests obstacles and environment view bounds
+  env_view.getNeighbors({2, 6, 8}, neighbors);
+  NP_CHECK_EQ(neighbors.size(), 2);
+  EXPECT_TRUE(std::count(neighbors.begin(), neighbors.end(),
+                         N(CBSState(3, 6, 8), CBSAction::Wait, 1)));
+  EXPECT_TRUE(std::count(neighbors.begin(), neighbors.end(),
+                         N(CBSState(3, 5, 8), CBSAction::Left, 1)));
+  EXPECT_FALSE(std::count(neighbors.begin(), neighbors.end(),
+                          N(CBSState(3, 7, 8), CBSAction::Right, 1)));
+  EXPECT_FALSE(std::count(neighbors.begin(), neighbors.end(),
+                          N(CBSState(3, 6, 7), CBSAction::Down, 1)));
+  EXPECT_FALSE(std::count(neighbors.begin(), neighbors.end(),
+                          N(CBSState(3, 6, 9), CBSAction::Up, 1)));
+}
+
+// fourconnected grow
+TEST(FourConnectedEnvironmentView, Grow) {
+  FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view({6, 3}, {},
+                                                                    &env);
+  EXPECT_TRUE(env_view.min_pos_ == State(4, 1));
+  EXPECT_TRUE(env_view.max_pos_ == State(8, 5));
+
+  env_view.Grow();
+  EXPECT_TRUE(env_view.min_pos_ == State(3, 0));
+  EXPECT_TRUE(env_view.max_pos_ == State(9, 6));
+}
+
+using WDefault =
+    Window<NaiveCBSEnvironment<State>,
+           FourConnectedEnvironmentView<NaiveCBSEnvironment<State>>>;
+TEST(Window, Merge) {
+  WDefault w({4, 6}, {2, 3, 6}, &env);
+  WDefault w_other({5, 1}, {9, 6}, {1, 3, 6, 8}, &env);
+  WDefault w_result({2, 1}, {9, 8}, {1, 2, 3, 6, 8}, &env);
+
+  EXPECT_TRUE(*w.Merge(w_other) == w_result);
+  EXPECT_TRUE(*w.Merge(w_other) == *w_other.Merge(w));
+}

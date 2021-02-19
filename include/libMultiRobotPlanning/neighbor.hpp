@@ -22,6 +22,14 @@ struct Neighbor {
   Action action;
   //! cost to get to the neighboring state
   Cost cost;
+
+  bool operator==(const Neighbor& o) {
+    return std::tie(state, action, cost) == std::tie(o.state, o.action, o.cost);
+  }
+  friend std::ostream& operator<<(std::ostream& os, const Neighbor& c) {
+    return os << "State: " << c.state << ", Action: " << c.action
+              << ", Cost: " << c.cost;
+  }
 };
 
 }  // namespace libMultiRobotPlanning

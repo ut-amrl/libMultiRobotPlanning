@@ -26,8 +26,7 @@ struct Window {
   Window(State state, const std::vector<size_t> agent_idxs, const Env* env)
       : agent_idxs_(agent_idxs),
         env_view_(state, std::vector<State>(), env),
-        cbs_(&env_view_) {
-  }
+        cbs_(&env_view_) {}
 
   Window(const std::vector<size_t> agent_idxs, EnvView view)
       : agent_idxs_(agent_idxs), env_view_(std::move(view)), cbs_(&env_view_) {}
@@ -46,6 +45,15 @@ struct Window {
 
   bool operator==(const Window& other) const {
     return (env_view_ == other.env_view_) && (agent_idxs_ == other.agent_idxs_);
+  }
+
+  friend std::ostream& operator<<(std::ostream& os, const Window& c) {
+    os << "agent_idxs_: [";
+    for (const auto& a : c.agent_idxs_) {
+      os << a << ", ";
+    }
+    os << "] " << c.env_view_;
+    return os;
   }
 
   bool operator!=(const Window& other) const { return !(*this == other); }

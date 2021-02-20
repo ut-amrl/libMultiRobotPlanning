@@ -121,7 +121,10 @@ class NaiveACBSImplementation {
     }
   }
 
-  void GrowAndReplanIn(std::unique_ptr<Window>& w) { w->Grow(); }
+  void GrowAndReplanIn(std::unique_ptr<Window>& w) {
+    w->Grow();
+    PlanIn(w);
+  }
 
  private:
   IndividualSpaceAction CBSActionToIndividualSpaceAction(

@@ -85,6 +85,11 @@ class FourConnectedEnvironmentView
     return os << "min_pos_: " << c.min_pos_ << ", max_pos_: " << c.max_pos_;
   }
 
+  bool ShouldQuit() const {
+    auto dims = env_->GetDims();
+    return Contains({0, 0}) && Contains({dims.first, dims.second});
+  }
+
   bool Contains(const State& s) const {
     return ((s.x >= min_pos_.x && s.x <= max_pos_.x) &&
             (s.y >= min_pos_.y && s.y <= max_pos_.y));
@@ -97,51 +102,19 @@ class FourConnectedEnvironmentView
     max_pos_.y += kRadiusGrowth;
   }
 
-  bool SuccessorOverlaps(const FourConnectedEnvironmentView& other) const {
-    State min_growth(min_pos_.x - kRadiusGrowth, min_pos_.y - kRadiusGrowth);
-    State max_growth(max_pos_.x + kRadiusGrowth, max_pos_.y + kRadiusGrowth);
-    State off1(min_pos_.x - kRadiusGrowth, max_pos_.y + kRadiusGrowth);
-    State off2(max_pos_.x + kRadiusGrowth, min_pos_.y - kRadiusGrowth);
-
-    // Check if our four corners are inside their box.
-    if (other.Contains(min_growth) || other.Contains(max_growth) ||
-        other.Contains(off1) || other.Contains(off2)) {
-      return true;
-    }
-
-    // Inflating their box is equivalent to inflating our box.
-    State other_off1(other.min_pos_.x - kRadiusGrowth,
-                     other.max_pos_.y + kRadiusGrowth);
-    State other_off2(other.max_pos_.x + kRadiusGrowth,
-                     other.min_pos_.y - kRadiusGrowth);
-
-    // Check if their four corners are inside our box.
-    if (Contains(other.min_pos_) || Contains(other.max_pos_) ||
-        Contains(other_off1) || Contains(other_off2)) {
-      return true;
-    }
-    return false;
+  bool SuccessorOverlaps(const FourConnectedEnvironmentView& o) const {
+    return Overlaps({min_pos_.x - kRadiusGrowth, min_pos_.y - kRadiusGrowth},
+                    {max_pos_.x + kRadiusGrowth, max_pos_.y + kRadiusGrowth},
+                    o.min_pos_, o.max_pos_) &&
+           Overlaps(
+               {o.min_pos_.x - kRadiusGrowth, o.min_pos_.y - kRadiusGrowth},
+               {o.max_pos_.x + kRadiusGrowth, o.max_pos_.y + kRadiusGrowth},
+               min_pos_, max_pos_);
   }
 
-  bool Overlaps(const FourConnectedEnvironmentView& other) const {
-    State off1(min_pos_.x, max_pos_.y);
-    State off2(max_pos_.x, min_pos_.y);
-
-    // Check if our four corners are inside their box.
-    if (other.Contains(min_pos_) || other.Contains(max_pos_) ||
-        other.Contains(off1) || other.Contains(off2)) {
-      return true;
-    }
-
-    State other_off1(other.min_pos_.x, other.max_pos_.y);
-    State other_off2(other.max_pos_.x, other.min_pos_.y);
-
-    // Check if their four corners are inside our box.
-    if (Contains(other.min_pos_) || Contains(other.max_pos_) ||
-        Contains(other_off1) || Contains(other_off2)) {
-      return true;
-    }
-    return false;
+  bool Overlaps(const FourConnectedEnvironmentView& o) const {
+    return Overlaps(min_pos_, max_pos_, o.min_pos_, o.max_pos_) &&
+           Overlaps(o.min_pos_, o.max_pos_, min_pos_, max_pos_);
   }
 
   FourConnectedEnvironmentView Merge(
@@ -179,10 +152,6 @@ class FourConnectedEnvironmentView
     neighbors.clear();
     {
       CBSState n(s.time + 1, s.x, s.y);
-      //      printf("Entering wait\n");
-      //      if (!CBSStateValid(n)) printf("CBSStateValid wait is false\n");
-      //      if (!TransitionValid(s, n)) printf("TransitionValid wait is
-      //      false\n"); printf("leafing wait\n");
       if (CBSStateValid(n) && TransitionValid(s, n)) {
         neighbors.emplace_back(
             Neighbor<CBSState, CBSAction, int>(n, CBSAction::Wait, 1));
@@ -197,11 +166,6 @@ class FourConnectedEnvironmentView
     }
     {
       CBSState n(s.time + 1, s.x + 1, s.y);
-      //      printf("Entering right\n");
-      //      if (!CBSStateValid(n)) printf("CBSStateValid right is false\n");
-      //      if (!TransitionValid(s, n)) printf("TransitionValid right is
-      //      false\n"); printf("leafing right\n");
-
       if (CBSStateValid(n) && TransitionValid(s, n)) {
         neighbors.emplace_back(
             Neighbor<CBSState, CBSAction, int>(n, CBSAction::Right, 1));
@@ -251,11 +215,6 @@ class FourConnectedEnvironmentView
   bool CBSStateValid(const CBSState& s) const {
     NP_NOT_NULL(constraints_);
     const auto& con = constraints_->vertexConstraints;
-    //    if (!env_->CBSStateBoundsCheck(s)) printf("env->CBSStateBoundsCheck is
-    //    false\n"); if (!CBSStateWindowBoundsCheck(s))
-    //    printf("CBSStateWindowBoundsCheck is false\n"); if
-    //    (!(con.find(VertexConstraint(s.time, s.x, s.y)) == con.end()))
-    //    printf("vertex constraint found\n");
     return env_->CBSStateBoundsCheck(s) && CBSStateWindowBoundsCheck(s) &&
            con.find(VertexConstraint(s.time, s.x, s.y)) == con.end();
   }
@@ -265,6 +224,11 @@ class FourConnectedEnvironmentView
     const auto& con = constraints_->edgeConstraints;
     return con.find(EdgeConstraint(s1.time, s1.x, s1.y, s2.x, s2.y)) ==
            con.end();
+  }
+  bool Overlaps(const State& min_this, const State& max_this,
+                const State& min_o, const State& max_o) const {
+    return ((min_this.x <= max_o.x && max_this.x >= min_o.x) &&
+            (min_this.y <= max_o.y && max_this.y >= min_o.y));
   }
 };
 

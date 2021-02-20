@@ -18,13 +18,15 @@ class EnvironmentView {
 
   virtual int admissibleHeuristic(const CBSState& s) const = 0;
 
+  virtual bool ShouldQuit() const = 0;
+
   virtual bool Contains(const Location& s) const = 0;
 
   virtual void Grow() = 0;
 
-  //  virtual bool SuccessorOverlaps(const EnvironmentView& other) const = 0;
+  //    virtual bool SuccessorOverlaps(const EnvironmentView& other) const;
   //
-  //  virtual bool Overlaps(const EnvironmentView& other) const = 0;
+  //    virtual bool Overlaps(const EnvironmentView& other) const;
 
   virtual void setLowLevelContext(size_t agentIdx,
                                   const Constraints* constraints) = 0;

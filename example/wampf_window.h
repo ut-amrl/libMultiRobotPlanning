@@ -92,9 +92,7 @@ struct Window {
 
   void Grow() { env_view_.Grow(); }
 
-  bool ShouldQuit() const {
-    return env_view_.ShouldQuit();
-  }
+  bool ShouldQuit() const { return env_view_.ShouldQuit(); }
 
   std::unique_ptr<Window> Merge(const Window& o) const {
     auto joined_agent_idxs = agent_idxs_;

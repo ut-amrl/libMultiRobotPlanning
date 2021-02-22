@@ -316,9 +316,7 @@ class NaiveCBSEnvironment {
            obstacles_.find({s.x, s.y}) == obstacles_.end();
   }
 
-  std::pair<int,int> GetDims() const {
-    return {dimx_, dimy_};
-  }
+  std::pair<int, int> GetDims() const { return {dimx_, dimy_}; }
 
  private:
   CBSState GetCBSState(

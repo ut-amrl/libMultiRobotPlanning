@@ -42,16 +42,7 @@ class NaiveACBSImplementation {
                           std::unordered_set<State> obstacles,
                           const JointState& start, const JointState& goal,
                           JointPath* path)
-      : env_(dimx, dimy, obstacles,
-             goal),  // ask kyle if it is okay, before it was
-                     // std::move(obstacles) but the constructor took a const
-                     // reference to obstacles.
-                     //        dimx_(dimx),
-                     //        dimy_(dimy),
-                     //        obstacles_(std::move(obstacles)),
-        start_(start),
-        //        goal_(goal),
-        path_(path) {}
+      : env_(dimx, dimy, obstacles, goal), start_(start), path_(path) {}
 
   std::optional<std::unique_ptr<Window>> FirstCollisionWindow() {
     auto res = FirstConflict();

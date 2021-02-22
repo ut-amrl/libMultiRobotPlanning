@@ -288,9 +288,9 @@ TEST(FourConnectedEnvironmentView, SuccessorOverlaps) {
   {
     // on top of each other
     FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view(
-            {1, 3}, {9, 6}, std::vector<State>(), &env);
+        {1, 3}, {9, 6}, std::vector<State>(), &env);
     FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view_other(
-            {1, 3}, {9, 6}, std::vector<State>(), &env);
+        {1, 3}, {9, 6}, std::vector<State>(), &env);
 
     EXPECT_TRUE(env_view.Overlaps(env_view_other));
     EXPECT_TRUE(env_view_other.Overlaps(env_view));
@@ -298,9 +298,9 @@ TEST(FourConnectedEnvironmentView, SuccessorOverlaps) {
   {
     // one eclipses the other
     FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view(
-            {3, 1}, {6, 9}, std::vector<State>(), &env);
+        {3, 1}, {6, 9}, std::vector<State>(), &env);
     FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view_other(
-            {2, 2}, {5, 8}, std::vector<State>(), &env);
+        {2, 2}, {5, 8}, std::vector<State>(), &env);
 
     EXPECT_TRUE(env_view.Overlaps(env_view_other));
     EXPECT_TRUE(env_view_other.Overlaps(env_view));
@@ -308,9 +308,9 @@ TEST(FourConnectedEnvironmentView, SuccessorOverlaps) {
   {
     // plus sign
     FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view(
-            {4, 1}, {5, 9}, std::vector<State>(), &env);
+        {4, 1}, {5, 9}, std::vector<State>(), &env);
     FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view_other(
-            {1, 3}, {9, 4}, std::vector<State>(), &env);
+        {1, 3}, {9, 4}, std::vector<State>(), &env);
 
     EXPECT_TRUE(env_view.Overlaps(env_view_other));
     EXPECT_TRUE(env_view_other.Overlaps(env_view));
@@ -318,9 +318,9 @@ TEST(FourConnectedEnvironmentView, SuccessorOverlaps) {
   {
     // growing into plus from t-shaped
     FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view(
-            {1, 3}, {7, 8}, std::vector<State>(), &env);
+        {1, 3}, {7, 8}, std::vector<State>(), &env);
     FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view_other(
-            {4,1}, {5, 8}, std::vector<State>(), &env);
+        {4, 1}, {5, 8}, std::vector<State>(), &env);
 
     EXPECT_TRUE(env_view.Overlaps(env_view_other));
     EXPECT_TRUE(env_view_other.Overlaps(env_view));
@@ -328,9 +328,9 @@ TEST(FourConnectedEnvironmentView, SuccessorOverlaps) {
   {
     // growing into exact same window
     FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view(
-            {2, 4}, {6, 7}, std::vector<State>(), &env);
+        {2, 4}, {6, 7}, std::vector<State>(), &env);
     FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view_other(
-            {1,3}, {7, 8}, std::vector<State>(), &env);
+        {1, 3}, {7, 8}, std::vector<State>(), &env);
 
     EXPECT_TRUE(env_view.Overlaps(env_view_other));
     EXPECT_TRUE(env_view_other.Overlaps(env_view));
@@ -338,9 +338,9 @@ TEST(FourConnectedEnvironmentView, SuccessorOverlaps) {
   {
     // growing from exact same to eclipsing
     FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view(
-            {1, 3}, {7, 8}, std::vector<State>(), &env);
+        {1, 3}, {7, 8}, std::vector<State>(), &env);
     FourConnectedEnvironmentView<NaiveCBSEnvironment<State>> env_view_other(
-            {1,3}, {7, 8}, std::vector<State>(), &env);
+        {1, 3}, {7, 8}, std::vector<State>(), &env);
 
     EXPECT_TRUE(env_view.Overlaps(env_view_other));
     EXPECT_TRUE(env_view_other.Overlaps(env_view));
@@ -462,19 +462,19 @@ TEST(Window, Merge) {
 
 TEST(Window, ShouldQuit) {
   {
-    WDefault w({0, 0}, {11, 11}, {1,2,3}, &env);
+    WDefault w({0, 0}, {11, 11}, {1, 2, 3}, &env);
     EXPECT_TRUE(w.ShouldQuit());
   }
   {
-    WDefault w({3,8},{13,14},{1,2,3},&env);
+    WDefault w({3, 8}, {13, 14}, {1, 2, 3}, &env);
     EXPECT_FALSE(w.ShouldQuit());
   }
   {
-    WDefault w({-2,-3},{13,14},{1,2,3},&env);
+    WDefault w({-2, -3}, {13, 14}, {1, 2, 3}, &env);
     EXPECT_TRUE(w.ShouldQuit());
   }
   {
-    WDefault w({3,8},{4,9},{1,2,3},&env);
+    WDefault w({3, 8}, {4, 9}, {1, 2, 3}, &env);
     EXPECT_FALSE(w.ShouldQuit());
   }
 }

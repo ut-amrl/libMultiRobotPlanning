@@ -2,3 +2,4 @@ build/
 release/
 .idea/
 cmake-build-debug/
+output/

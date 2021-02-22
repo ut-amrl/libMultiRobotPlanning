@@ -125,14 +125,14 @@ include_directories(
 #  ${Boost_LIBRARIES}
 #)
 #
-### cbs
-#add_executable(cbs
-#  example/cbs.cpp
-#)
-#target_link_libraries(cbs
-#  ${Boost_LIBRARIES}
-#  yaml-cpp
-#)
+## cbs
+add_executable(cbs
+  example/cbs.cpp
+)
+target_link_libraries(cbs
+  ${Boost_LIBRARIES}
+  yaml-cpp
+)
 #
 ### cbs_ta
 #add_executable(cbs_ta

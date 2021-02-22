@@ -18,17 +18,22 @@ class WAMPF {
 
  private:
   JointPath pi_;
+  Cost numer_;
+  Cost denom_;
   std::vector<std::unique_ptr<Window>> W_;
   WAMPFImplementation impl_;
 
  public:
   WAMPF(size_t dimx, size_t dimy, std::unordered_set<State> obstacles,
         const JointState& start, const JointState& goal)
-      : pi_(), W_(), impl_(dimx, dimy, obstacles, start, goal, &pi_) {
+      : pi_(), numer_(0), denom_(0), W_(), impl_(dimx, dimy, obstacles, start, goal, &pi_) {
     pi_ = IndividualPlanner(dimx, dimy, obstacles, start, goal).Search();
+    for (const auto& agent_path : pi_) {
+      denom_ += agent_path.cost;
+    }
   }
 
-  void RecWAMPF() {
+  std::tuple<const JointPath*, Cost, Cost> RecWAMPF() {
     for (int i = 0; i < static_cast<int>(W_.size()); ++i) {
       if (IsOverlappingAnotherWindow(*W_[i])) {
         std::unique_ptr<Window> wk_copy = std::move(W_[i]);
@@ -53,7 +58,16 @@ class WAMPF {
       }
     }
 
-    // Report pi_;
+    if (W_.size() == 0) {
+      return std::make_tuple(&pi_, 1, 1); // path is optimal but numer_ > denom_
+    }
+
+    numer_ = 0;
+    for (const auto& agent_path : pi_) {
+      numer_ += agent_path.cost;
+    }
+
+    return std::make_tuple(&pi_, numer_, denom_);
   }
 
   const JointPath& GetPath() const { return pi_; }

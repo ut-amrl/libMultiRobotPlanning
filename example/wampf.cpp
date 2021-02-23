@@ -13,12 +13,12 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include "timer.hpp"
 #include "wampf_individual.h"
 #include "wampf_naive_cbs.h"
 #include "wampf_naive_cbs_env.h"
 #include "wampf_state.h"
 #include "wampf_window.h"
-#include "timer.hpp"
 
 using libMultiRobotPlanning::IndividualSpaceAction;
 using libMultiRobotPlanning::IndividualSpaceAStar;
@@ -31,29 +31,29 @@ using wampf_impl::NaiveACBSImplementation;
 using Env = naive_cbs_wampf_impl::NaiveCBSEnvironment<State>;
 using EnvView = naive_cbs_wampf_impl::FourConnectedEnvironmentView<
     naive_cbs_wampf_impl::NaiveCBSEnvironment<State>>;
-
 using Window = libMultiRobotPlanning::Window<Env, EnvView>;
-
 using Cost = int;
 using JointState = std::vector<State>;
 using JointPath = std::vector<PlanResult<State, IndividualSpaceAction, Cost>>;
+using WAMPF = libMultiRobotPlanning::wampf::WAMPF<
+    State, IndividualSpaceAction, Cost, Window,
+    IndividualSpaceAStar<State, IndividualSpaceAction, Cost,
+                         IndividualSpaceEnvironment>,
+    NaiveACBSImplementation>;
 
-int main(int argc, char* argv[]) {
-  using WAMPF = libMultiRobotPlanning::wampf::WAMPF<
-      State, IndividualSpaceAction, Cost, Window,
-      IndividualSpaceAStar<State, IndividualSpaceAction, Cost,
-                           IndividualSpaceEnvironment>,
-      NaiveACBSImplementation>;
+namespace po = boost::program_options;
 
-  namespace po = boost::program_options;
+std::optional<std::tuple<int, int, std::unordered_set<State>,
+                         std::vector<State>, std::vector<State>, std::string>>
+ParseInputYAML(int argc, char** argv) {
   po::options_description desc("Allowed options");
-  std::string inputFile;
-  std::string outputFile;
+  std::string input_file;
+  std::string output_file;
   desc.add_options()("help", "produce help message")(
-          "input,i", po::value<std::string>(&inputFile)->required(),
-          "input file (YAML)")("output,o",
-                               po::value<std::string>(&outputFile)->required(),
-                               "output file (YAML)");
+      "input,i", po::value<std::string>(&input_file)->required(),
+      "input file (YAML)")("output,o",
+                           po::value<std::string>(&output_file)->required(),
+                           "output file (YAML)");
 
   try {
     po::variables_map vm;
@@ -62,15 +62,15 @@ int main(int argc, char* argv[]) {
 
     if (vm.count("help") != 0u) {
       std::cout << desc << "\n";
-      return 0;
+      return {};
     }
   } catch (po::error& e) {
     std::cerr << e.what() << std::endl << std::endl;
     std::cerr << desc << std::endl;
-    return 1;
+    return {};
   }
 
-  YAML::Node config = YAML::LoadFile(inputFile);
+  YAML::Node config = YAML::LoadFile(input_file);
 
   std::unordered_set<State> obstacles;
   JointState goal_state;
@@ -91,13 +91,42 @@ int main(int argc, char* argv[]) {
     goal_state.emplace_back(State(goal[0].as<int>(), goal[1].as<int>()));
   }
 
+  return {{dimx, dimy, obstacles, goal_state, start_state, output_file}};
+}
 
-  std::cout << "Starting WAMPF!" << std::endl;
-  WAMPF wampf(dimx, dimy, obstacles, start_state, goal_state);
+void GenerateOutputYAML(const JointPath* best_path,
+                        const std::string& output_file, const double& runtime,
+                        const double& time_to_first_sol) {
+  int cost = 0;
+  int makespan = 0;
+  for (const auto& s : *best_path) {
+    cost += s.cost;
+    makespan = std::max<int>(makespan, s.cost);
+  }
+
+  std::ofstream out(output_file);
+  out << "statistics:" << std::endl;
+  out << "  cost: " << cost << std::endl;
+  out << "  makespan: " << makespan << std::endl;
+  out << "  runtime: " << runtime << std::endl;
+  out << "  time to first solution: " << time_to_first_sol << std::endl;
+  out << "schedule:" << std::endl;
+  for (size_t a = 0; a < (*best_path).size(); ++a) {
+    out << "  agent" << a << ":" << std::endl;
+    for (const auto& state : (*best_path)[a].states) {
+      out << "    - x: " << state.first.x << std::endl
+          << "      y: " << state.first.y << std::endl
+          << "      t: " << state.second << std::endl;
+    }
+  }
+}
+
+std::tuple<const JointPath*, double, double> RunWAMPF(WAMPF& wampf) {
+  Timer optimal_timer;
+  Timer first_sol_timer;
   const JointPath* best_path = nullptr;
   bool should_continue = true;
   bool first_sol = true;
-  Timer optimal_timer, first_sol_timer;
   while (should_continue) {
     auto [pi, numer, denom] = wampf.RecWAMPF();
     should_continue = !(numer == denom);
@@ -108,32 +137,29 @@ int main(int argc, char* argv[]) {
     }
   }
   optimal_timer.stop();
-  if (best_path != nullptr) {
-    std::cout << "Planning successful! " << std::endl;
-    int cost = 0;
-    int makespan = 0;
-    for (const auto& s : *best_path) {
-      cost += s.cost;
-      makespan = std::max<int>(makespan, s.cost);
-    }
+  return {best_path, optimal_timer.elapsedSeconds(),
+          first_sol_timer.elapsedSeconds()};
+}
 
-    std::ofstream out(outputFile);
-    out << "statistics:" << std::endl;
-    out << "  cost: " << cost << std::endl;
-    out << "  makespan: " << makespan << std::endl;
-    out << "  runtime: " << optimal_timer.elapsedSeconds() << std::endl;
-    out << "  first solution runtime: " << first_sol_timer.elapsedSeconds() << std::endl;
-    out << "schedule:" << std::endl;
-    for (size_t a = 0; a < (*best_path).size(); ++a) {
-      out << "  agent" << a << ":" << std::endl;
-      for (const auto& state : (*best_path)[a].states) {
-        out << "    - x: " << state.first.x << std::endl
-            << "      y: " << state.first.y << std::endl
-            << "      t: " << state.second << std::endl;
-      }
-    }
-  } else {
-    std::cout << "Planning NOT successful!" << std::endl;
+int main(int argc, char* argv[]) {
+  auto parsed_yaml_info = ParseInputYAML(argc, argv);
+  if (!parsed_yaml_info) {
+    printf("Did not parse YAML\n");
+    return 1;
   }
+  auto [dimx, dimy, obstacles, start_state, goal_state, output_file] =
+      *parsed_yaml_info;
 
+  std::cout << "Starting WAMPF!" << std::endl;
+  WAMPF wampf(dimx, dimy, obstacles, start_state, goal_state);
+
+  auto [best_path, runtime, time_to_first_sol] = RunWAMPF(wampf);
+
+  if (best_path == nullptr) {
+    std::cout << "Planning NOT successful!" << std::endl;
+    return 1;
+  }
+  std::cout << "Planning successful! " << std::endl;
+
+  GenerateOutputYAML(best_path, output_file, runtime, time_to_first_sol);
 }

@@ -18,18 +18,20 @@ class WAMPF {
 
  private:
   JointPath pi_;
-  Cost numer_;
-  Cost denom_;
+  Cost individual_plan_cost_;
   std::vector<std::unique_ptr<Window>> W_;
   WAMPFImplementation impl_;
 
  public:
   WAMPF(size_t dimx, size_t dimy, std::unordered_set<State> obstacles,
         const JointState& start, const JointState& goal)
-      : pi_(), numer_(0), denom_(0), W_(), impl_(dimx, dimy, obstacles, start, goal, &pi_) {
+      : pi_(),
+        individual_plan_cost_(0),
+        W_(),
+        impl_(dimx, dimy, obstacles, start, goal, &pi_) {
     pi_ = IndividualPlanner(dimx, dimy, obstacles, start, goal).Search();
     for (const auto& agent_path : pi_) {
-      denom_ += agent_path.cost;
+      individual_plan_cost_ += agent_path.cost;
     }
   }
 
@@ -58,16 +60,17 @@ class WAMPF {
       }
     }
 
-    if (W_.size() == 0) {
-      return std::make_tuple(&pi_, 1, 1); // path is optimal but numer_ > denom_
+    if (W_.empty()) {
+      return {&pi_, 1, 1};
     }
 
-    numer_ = 0;
+    Cost curr_plan_cost = 0;
     for (const auto& agent_path : pi_) {
-      numer_ += agent_path.cost;
+      curr_plan_cost += agent_path.cost;
     }
 
-    return std::make_tuple(&pi_, numer_, denom_);
+    NP_CHECK_GE(curr_plan_cost, individual_plan_cost_);
+    return {&pi_, curr_plan_cost, individual_plan_cost_};
   }
 
   const JointPath& GetPath() const { return pi_; }

@@ -15,7 +15,7 @@ PlanResult<State, Action, int> InsertPathRepair(
     PlanResult<State, Action, int> repair, const int repair_start,
     const int repair_end) {
   NP_CHECK(static_cast<int>(current_path.states.size()) > repair_start);
-  NP_CHECK(static_cast<int>(current_path.states.size()) > repair_end);
+  NP_CHECK_GT(static_cast<int>(current_path.states.size()), repair_end);
   NP_CHECK(repair_start < repair_end);
   NP_CHECK(!repair.states.empty());
   NP_CHECK(current_path.cost == current_path.states.back().second);
@@ -84,6 +84,7 @@ std::optional<std::pair<int, int>> GetWindowStartGoalIndex(
       start_idx = i;
     }
     end_idx = i;
+    if (path.states[i].second == path.cost) break;
   }
   if (start_idx != end_idx) {
     return {{start_idx, end_idx}};

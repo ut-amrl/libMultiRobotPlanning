@@ -52,7 +52,6 @@ class WAMPF {
       PlanInOverlapWindows(std::move(*collision_res));
       collision_res = impl_.FirstCollisionWindow();
     }
-
     for (int i = 0; i < static_cast<int>(W_.size()); ++i) {
       if ((*W_[i]).ShouldQuit()) {
         W_.erase(W_.begin() + i);

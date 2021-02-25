@@ -78,15 +78,16 @@ class NaiveACBSImplementation {
   }
 
   void PlanIn(std::unique_ptr<Window>& w) {
-    auto [start_idx, goal_idx] = GetStartEndIndices(*w);
+    const auto start_goal_idxs =
+            libMultiRobotPlanning::wampf::GetWindowStartGoalIndexes(*path_, *w);
 
     std::vector<naive_cbs_wampf_impl::CBSState> start_state;
     JointState goal_state;
-    for (const auto& idx : w->agent_idxs_) {
-      const auto start = GetState(idx, start_idx);
+    for (size_t i = 0; i < w->agent_idxs_.size(); i++) {
+      const auto start = GetState(w->agent_idxs_[i], start_goal_idxs[i].first);
       start_state.push_back(
-          naive_cbs_wampf_impl::CBSState(0, start.x, start.y));
-      goal_state.emplace_back(GetState(idx, goal_idx));
+              naive_cbs_wampf_impl::CBSState(0, start.x, start.y));
+      goal_state.emplace_back(GetState(w->agent_idxs_[i], start_goal_idxs[i].second));
     }
 
     w->env_view_.UpdateGoals(goal_state);
@@ -99,8 +100,16 @@ class NaiveACBSImplementation {
       w->Grow();
       PlanIn(w);
     }
+    auto repair = CBSRepairToStandardRepair(cbs_repair);
 
-    const auto repair = CBSRepairToStandardRepair(cbs_repair);
+    // you need to pad when goal_idx - start_idx is greater than the size of
+    // the states vector for an agent's repair
+    for (size_t i = 0; i < repair.size(); i++) {
+      int required_len = start_goal_idxs[i].second - start_goal_idxs[i].first;
+      if (required_len > static_cast<int>(repair[i].states.size())) {
+        PadPlanResult(repair[i], required_len);
+      }
+    }
 
     for (size_t i = 0; i < repair.size(); ++i) {
       NP_CHECK(i < w->agent_idxs_.size());
@@ -108,7 +117,7 @@ class NaiveACBSImplementation {
       NP_CHECK(path_idx < path_->size());
       auto& local_path = (*path_)[path_idx];
       local_path = libMultiRobotPlanning::wampf::InsertPathRepair(
-          local_path, repair[i], start_idx, goal_idx);
+          local_path, repair[i], start_goal_idxs[i].first, start_goal_idxs[i].second);
     }
   }
 
@@ -118,6 +127,15 @@ class NaiveACBSImplementation {
   }
 
  private:
+  void PadPlanResult(PlanResult<State, IndividualSpaceAction, int>& path,
+                     int required_len) {
+    while (static_cast<int>(path.states.size()) < required_len) {
+      auto back_state_copy = path.states.back();
+      path.states.emplace_back(back_state_copy);
+      path.actions.push_back({IndividualSpaceAction::Wait, 0});
+    }
+  }
+
   IndividualSpaceAction CBSActionToIndividualSpaceAction(
       const naive_cbs_wampf_impl::CBSAction& a) const {
     switch (a) {
@@ -135,13 +153,15 @@ class NaiveACBSImplementation {
     return IndividualSpaceAction::Wait;
   }
 
-  std::vector<PlanResult<State, IndividualSpaceAction, int>>
+ std::vector<PlanResult<State, IndividualSpaceAction, int>>
   CBSRepairToStandardRepair(
       const std::vector<PlanResult<naive_cbs_wampf_impl::CBSState,
                                    naive_cbs_wampf_impl::CBSAction, int>>&
           cbs_repair) {
     std::vector<PlanResult<State, IndividualSpaceAction, int>> repair;
+    int max_agent_len = cbs_repair[0].states.size();
     for (const auto& r : cbs_repair) {
+      max_agent_len = std::max(static_cast<int>(r.states.size()), max_agent_len);
       repair.push_back({});
       for (const auto& s : r.states) {
         repair.back().states.push_back({{s.first.x, s.first.y}, s.second});

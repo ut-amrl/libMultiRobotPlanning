@@ -67,10 +67,12 @@ class FourConnectedEnvironmentView
   }
 
   FourConnectedEnvironmentView(const FourConnectedEnvironmentView&) = default;
+
   FourConnectedEnvironmentView(FourConnectedEnvironmentView&&) = default;
 
   FourConnectedEnvironmentView& operator=(
       const FourConnectedEnvironmentView& o) = default;
+
   FourConnectedEnvironmentView& operator=(FourConnectedEnvironmentView&) =
       default;
 
@@ -197,6 +199,18 @@ class FourConnectedEnvironmentView
       const Conflict& conflict,
       std::map<size_t, Constraints>& constraints) const {
     env_->createConstraintsFromConflict(conflict, constraints);
+  }
+
+  void createConstraintsFromConflict(const Conflict& conflict,
+                                     std::map<size_t, Constraints>& constraints,
+                                     int time_offset_agent1,
+                                     int time_offset_agent2) const {
+    env_->createConstraintsFromConflict(conflict, constraints,
+                                        time_offset_agent1, time_offset_agent2);
+  }
+
+  void FixPadTime(std::vector<std::pair<CBSState, int>>& sol) const {
+    env_->FixPadTime(sol);
   }
 
   void onExpandHighLevelNode(int /*cost*/) { highLevelExpanded_++; }

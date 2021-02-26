@@ -2,23 +2,32 @@
 
 #include <map>
 
-#include "a_star.hpp"
+#include "a_star_mod.hpp"
+#include "utils.hpp"
 
 namespace libMultiRobotPlanning {
 
+/*
+ * This is a modified CBS to allow for robots starting their paths at different
+ * times. The main change is an addition of a vector of time offsets as a
+ * parameter in the search() function.
+ */
+
 template <typename State, typename Action, typename Cost, typename Conflict,
           typename Constraints, typename Environment>
-class CBS {
+class CBSMod {
  public:
-  explicit CBS(Environment* environment) : m_env(environment) {}
-  CBS(const CBS&) = default;
-  CBS(CBS&&) = default;
+  explicit CBSMod(Environment* environment) : m_env(environment) {}
+  CBSMod(const CBSMod&) = default;
+  CBSMod(CBSMod&&) = default;
 
-  CBS& operator=(const CBS&) = default;
-  CBS& operator=(CBS&&) = default;
+  CBSMod& operator=(const CBSMod&) = default;
+  CBSMod& operator=(CBSMod&&) = default;
 
   bool search(const std::vector<State>& initialStates,
-              std::vector<PlanResult<State, Action, Cost> >& solution) {
+              std::vector<PlanResult<State, Action, Cost>>& solution,
+              const std::vector<int>& time_offsets) {
+    NP_CHECK_EQ(time_offsets.size(), initialStates.size());
     HighLevelNode start;
     start.solution.resize(initialStates.size());
     start.constraints.resize(initialStates.size());
@@ -28,16 +37,16 @@ class CBS {
     for (size_t i = 0; i < initialStates.size(); ++i) {
       LowLevelEnvironment llenv(m_env, i, start.constraints[i]);
       LowLevelSearch_t lowLevel(&llenv);
-      bool success = lowLevel.search(initialStates[i], start.solution[i]);
+      bool success =
+          lowLevel.search(initialStates[i], start.solution[i], time_offsets[i]);
       if (!success) {
         return false;
       }
       start.cost += start.solution[i].cost;
     }
 
-    // std::priority_queue<HighLevelNode> open;
     typename boost::heap::d_ary_heap<HighLevelNode, boost::heap::arity<2>,
-                                     boost::heap::mutable_<true> >
+                                     boost::heap::mutable_<true>>
         open;
 
     auto handle = open.push(start);
@@ -53,13 +62,22 @@ class CBS {
 
       Conflict conflict;
       if (!m_env->getFirstConflict(P.solution, conflict)) {
+        // this gets rid of padding that we added in the most recent A* search
+        for (int i = 0; i < static_cast<int>(P.solution.size()); i++) {
+          while (P.solution[i].states.size() >
+                 1 + P.solution[i].actions.size()) {
+            P.solution[i].states.erase(P.solution[i].states.begin());
+          }
+        }
         solution = P.solution;
         return true;
       }
 
       // create additional nodes to resolve conflict
       std::map<size_t, Constraints> constraints;
-      m_env->createConstraintsFromConflict(conflict, constraints);
+      m_env->createConstraintsFromConflict(conflict, constraints,
+                                           time_offsets[conflict.agent1],
+                                           time_offsets[conflict.agent2]);
       for (const auto& c : constraints) {
         size_t i = c.first;
         HighLevelNode newNode = P;
@@ -73,7 +91,8 @@ class CBS {
 
         LowLevelEnvironment llenv(m_env, i, newNode.constraints[i]);
         LowLevelSearch_t lowLevel(&llenv);
-        bool success = lowLevel.search(initialStates[i], newNode.solution[i]);
+        bool success = lowLevel.search(initialStates[i], newNode.solution[i],
+                                       time_offsets[i]);
 
         newNode.cost += newNode.solution[i].cost;
 
@@ -91,7 +110,7 @@ class CBS {
 
  private:
   struct HighLevelNode {
-    std::vector<PlanResult<State, Action, Cost> > solution;
+    std::vector<PlanResult<State, Action, Cost>> solution;
     std::vector<Constraints> constraints;
 
     Cost cost;
@@ -99,7 +118,7 @@ class CBS {
     int id;
 
     typename boost::heap::d_ary_heap<HighLevelNode, boost::heap::arity<2>,
-                                     boost::heap::mutable_<true> >::handle_type
+                                     boost::heap::mutable_<true>>::handle_type
         handle;
 
     bool operator<(const HighLevelNode& n) const {
@@ -138,12 +157,16 @@ class CBS {
     bool isSolution(const State& s) { return m_env->isSolution(s); }
 
     void getNeighbors(const State& s,
-                      std::vector<Neighbor<State, Action, Cost> >& neighbors) {
+                      std::vector<Neighbor<State, Action, Cost>>& neighbors) {
       m_env->getNeighbors(s, neighbors);
     }
 
     void onExpandNode(const State& s, Cost fScore, Cost gScore) {
       m_env->onExpandLowLevelNode(s, fScore, gScore);
+    }
+
+    void FixPadTime(std::vector<std::pair<State, Cost>>& sol) {
+      m_env->FixPadTime(sol);
     }
 
     void onDiscover(const State& /*s*/, Cost /*fScore*/, Cost /*gScore*/) {}
@@ -154,7 +177,7 @@ class CBS {
 
  private:
   Environment* m_env;
-  typedef AStar<State, Action, Cost, LowLevelEnvironment> LowLevelSearch_t;
+  typedef AStarMod<State, Action, Cost, LowLevelEnvironment> LowLevelSearch_t;
 };
 
 }  // namespace libMultiRobotPlanning

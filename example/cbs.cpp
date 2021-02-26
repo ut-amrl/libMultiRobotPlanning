@@ -6,10 +6,10 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include <libMultiRobotPlanning/cbs.hpp>
+#include <libMultiRobotPlanning/cbs_mod.hpp>
 #include "timer.hpp"
 
-using libMultiRobotPlanning::CBS;
+using libMultiRobotPlanning::CBSMod;
 using libMultiRobotPlanning::Neighbor;
 using libMultiRobotPlanning::PlanResult;
 
@@ -289,7 +289,7 @@ class Environment {
   }
 
   void getNeighbors(const State& s,
-                    std::vector<Neighbor<State, Action, int> >& neighbors) {
+                    std::vector<Neighbor<State, Action, int>>& neighbors) {
     // std::cout << "#VC " << constraints.vertexConstraints.size() << std::endl;
     // for(const auto& vc : constraints.vertexConstraints) {
     //   std::cout << "  " << vc.time << "," << vc.x << "," << vc.y <<
@@ -333,7 +333,7 @@ class Environment {
   }
 
   bool getFirstConflict(
-      const std::vector<PlanResult<State, Action, int> >& solution,
+      const std::vector<PlanResult<State, Action, int>>& solution,
       Conflict& result) {
     int max_t = 0;
     for (const auto& sol : solution) {
@@ -353,8 +353,6 @@ class Environment {
             result.type = Conflict::Vertex;
             result.x1 = state1.x;
             result.y1 = state1.y;
-            // std::cout << "VC " << t << "," << state1.x << "," << state1.y <<
-            // std::endl;
             return true;
           }
         }
@@ -385,23 +383,36 @@ class Environment {
     return false;
   }
 
-  void createConstraintsFromConflict(
-      const Conflict& conflict, std::map<size_t, Constraints>& constraints) {
+  void createConstraintsFromConflict(const Conflict& conflict,
+                                     std::map<size_t, Constraints>& constraints,
+                                     int time_offset_agent1,
+                                     int time_offset_agent2) {
     if (conflict.type == Conflict::Vertex) {
       Constraints c1;
-      c1.vertexConstraints.emplace(
-          VertexConstraint(conflict.time, conflict.x1, conflict.y1));
-      constraints[conflict.agent1] = c1;
-      constraints[conflict.agent2] = c1;
-    } else if (conflict.type == Conflict::Edge) {
-      Constraints c1;
-      c1.edgeConstraints.emplace(EdgeConstraint(
-          conflict.time, conflict.x1, conflict.y1, conflict.x2, conflict.y2));
+      c1.vertexConstraints.emplace(VertexConstraint(
+          conflict.time - time_offset_agent1, conflict.x1, conflict.y1));
       constraints[conflict.agent1] = c1;
       Constraints c2;
-      c2.edgeConstraints.emplace(EdgeConstraint(
-          conflict.time, conflict.x2, conflict.y2, conflict.x1, conflict.y1));
+      c2.vertexConstraints.emplace(VertexConstraint(
+          conflict.time - time_offset_agent2, conflict.x1, conflict.y1));
       constraints[conflict.agent2] = c2;
+    } else if (conflict.type == Conflict::Edge) {
+      Constraints c1;
+      c1.edgeConstraints.emplace(
+          EdgeConstraint(conflict.time - time_offset_agent1, conflict.x1,
+                         conflict.y1, conflict.x2, conflict.y2));
+      constraints[conflict.agent1] = c1;
+      Constraints c2;
+      c2.edgeConstraints.emplace(
+          EdgeConstraint(conflict.time - time_offset_agent2, conflict.x2,
+                         conflict.y2, conflict.x1, conflict.y1));
+      constraints[conflict.agent2] = c2;
+    }
+  }
+
+  void FixPadTime(std::vector<std::pair<State, int>>& sol) {
+    for (int i = 0; i < static_cast<int>(sol.size()); i++) {
+      sol[i].first.time = i;
     }
   }
 
@@ -418,7 +429,7 @@ class Environment {
 
  private:
   State getState(size_t agentIdx,
-                 const std::vector<PlanResult<State, Action, int> >& solution,
+                 const std::vector<PlanResult<State, Action, int>>& solution,
                  size_t t) {
     assert(agentIdx < solution.size());
     if (t < solution[agentIdx].states.size()) {
@@ -612,17 +623,17 @@ int main(int argc, char* argv[]) {
   for (const auto& node : config["agents"]) {
     const auto& start = node["start"];
     const auto& goal = node["goal"];
+
     startStates.emplace_back(State(0, start[0].as<int>(), start[1].as<int>()));
-    // std::cout << "s: " << startStates.back() << std::endl;
     goals.emplace_back(Location(goal[0].as<int>(), goal[1].as<int>()));
   }
 
   Environment mapf(dimx, dimy, obstacles, goals);
-  CBS<State, Action, int, Conflict, Constraints, Environment> cbs(&mapf);
-  std::vector<PlanResult<State, Action, int> > solution;
+  CBSMod<State, Action, int, Conflict, Constraints, Environment> cbs(&mapf);
+  std::vector<PlanResult<State, Action, int>> solution;
 
   Timer timer;
-  bool success = cbs.search(startStates, solution);
+  bool success = cbs.search(startStates, solution, {0, 1, 2});
   timer.stop();
 
   if (success) {
@@ -647,7 +658,7 @@ int main(int argc, char* argv[]) {
       for (const auto& state : solution[a].states) {
         out << "    - x: " << state.first.x << std::endl
             << "      y: " << state.first.y << std::endl
-            << "      t: " << state.second << std::endl;
+            << "      t: " << state.first.time << std::endl;
       }
     }
   } else {

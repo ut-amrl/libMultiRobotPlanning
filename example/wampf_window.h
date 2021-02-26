@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <libMultiRobotPlanning/cbs_mod.hpp>
 #include <vector>
 
 #include "wampf_state.h"
@@ -18,9 +19,9 @@ struct Window {
  public:
   std::vector<size_t> agent_idxs_;
   EnvView env_view_;
-  CBS<naive_cbs_wampf_impl::CBSState, naive_cbs_wampf_impl::CBSAction, int,
-      naive_cbs_wampf_impl::Conflict, naive_cbs_wampf_impl::Constraints,
-      EnvView>
+  CBSMod<naive_cbs_wampf_impl::CBSState, naive_cbs_wampf_impl::CBSAction, int,
+         naive_cbs_wampf_impl::Conflict, naive_cbs_wampf_impl::Constraints,
+         EnvView>
       cbs_;
 
   Window(State state, const std::vector<size_t> agent_idxs, const Env* env)

@@ -239,6 +239,12 @@ class NaiveCBSEnvironment {
 
   NaiveCBSEnvironment& operator=(const NaiveCBSEnvironment&) = delete;
 
+  //  std::pair<CBSState, int> getStatesPad(const CBSState& pos) {
+  //    return {{0, pos.x, pos.y}, 0}
+  //  }
+  //
+  std::pair<CBSAction, int> getActionsPad() { return {CBSAction::Wait, 0}; }
+
   bool getFirstConflict(
       const std::vector<PlanResult<CBSState, CBSAction, int>>& solution,
       Conflict& result) const {
@@ -308,6 +314,39 @@ class NaiveCBSEnvironment {
       c2.edgeConstraints.emplace(EdgeConstraint(
           conflict.time, conflict.x2, conflict.y2, conflict.x1, conflict.y1));
       constraints[conflict.agent2] = c2;
+    }
+  }
+
+  void createConstraintsFromConflict(const Conflict& conflict,
+                                     std::map<size_t, Constraints>& constraints,
+                                     int time_offset_agent1,
+                                     int time_offset_agent2) const {
+    if (conflict.type == Conflict::Vertex) {
+      Constraints c1;
+      c1.vertexConstraints.emplace(VertexConstraint(
+          conflict.time - time_offset_agent1, conflict.x1, conflict.y1));
+      constraints[conflict.agent1] = c1;
+      Constraints c2;
+      c2.vertexConstraints.emplace(VertexConstraint(
+          conflict.time - time_offset_agent2, conflict.x1, conflict.y1));
+      constraints[conflict.agent2] = c2;
+    } else if (conflict.type == Conflict::Edge) {
+      Constraints c1;
+      c1.edgeConstraints.emplace(
+          EdgeConstraint(conflict.time - time_offset_agent1, conflict.x1,
+                         conflict.y1, conflict.x2, conflict.y2));
+      constraints[conflict.agent1] = c1;
+      Constraints c2;
+      c2.edgeConstraints.emplace(
+          EdgeConstraint(conflict.time - time_offset_agent2, conflict.x2,
+                         conflict.y2, conflict.x1, conflict.y1));
+      constraints[conflict.agent2] = c2;
+    }
+  }
+
+  void FixPadTime(std::vector<std::pair<CBSState, int>>& sol) const {
+    for (int i = 0; i < static_cast<int>(sol.size()); i++) {
+      sol[i].first.time = i;
     }
   }
 

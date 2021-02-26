@@ -84,7 +84,7 @@ std::optional<std::pair<int, int>> GetWindowStartGoalIndex(
       start_idx = i;
     }
     end_idx = i;
-    if (path.states[i].second == path.cost) break;
+    //    if (path.states[i].second == path.cost) break;
   }
   if (start_idx != end_idx) {
     return {{start_idx, end_idx}};

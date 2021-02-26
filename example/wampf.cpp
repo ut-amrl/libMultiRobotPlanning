@@ -91,7 +91,7 @@ ParseInputYAML(int argc, char** argv) {
     goal_state.emplace_back(State(goal[0].as<int>(), goal[1].as<int>()));
   }
 
-  return {{dimx, dimy, obstacles, goal_state, start_state, output_file}};
+  return {{dimx, dimy, obstacles, start_state, goal_state, output_file}};
 }
 
 void GenerateOutputYAML(const JointPath* best_path,

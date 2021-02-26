@@ -61,6 +61,8 @@ class AStarMod {
               std::get<1>(iter->second), std::get<2>(iter->second)));
           iter = cameFrom.find(std::get<0>(iter->second));
         }
+        // this pads the states vector based on time offset, so when we search
+        // for collisions, getFirstConflict will have the correct times
         for (int i = 0; i < time_offset; i++) {
           solution.states.push_back(std::make_pair<>(startState, initialCost));
           // don't need to pad action because getFirstConflict does not

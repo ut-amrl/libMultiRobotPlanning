@@ -6,10 +6,10 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include <libMultiRobotPlanning/cbs_mod.hpp>
+#include <libMultiRobotPlanning/cbs.hpp>
 #include "timer.hpp"
 
-using libMultiRobotPlanning::CBSMod;
+using libMultiRobotPlanning::CBS;
 using libMultiRobotPlanning::Neighbor;
 using libMultiRobotPlanning::PlanResult;
 
@@ -383,29 +383,23 @@ class Environment {
     return false;
   }
 
-  void createConstraintsFromConflict(const Conflict& conflict,
-                                     std::map<size_t, Constraints>& constraints,
-                                     int time_offset_agent1,
-                                     int time_offset_agent2) {
+  void createConstraintsFromConflict(
+          const Conflict& conflict,
+          std::map<size_t, Constraints>& constraints) const {
     if (conflict.type == Conflict::Vertex) {
       Constraints c1;
-      c1.vertexConstraints.emplace(VertexConstraint(
-          conflict.time - time_offset_agent1, conflict.x1, conflict.y1));
+      c1.vertexConstraints.emplace(
+              VertexConstraint(conflict.time, conflict.x1, conflict.y1));
       constraints[conflict.agent1] = c1;
-      Constraints c2;
-      c2.vertexConstraints.emplace(VertexConstraint(
-          conflict.time - time_offset_agent2, conflict.x1, conflict.y1));
-      constraints[conflict.agent2] = c2;
+      constraints[conflict.agent2] = c1;
     } else if (conflict.type == Conflict::Edge) {
       Constraints c1;
-      c1.edgeConstraints.emplace(
-          EdgeConstraint(conflict.time - time_offset_agent1, conflict.x1,
-                         conflict.y1, conflict.x2, conflict.y2));
+      c1.edgeConstraints.emplace(EdgeConstraint(
+              conflict.time, conflict.x1, conflict.y1, conflict.x2, conflict.y2));
       constraints[conflict.agent1] = c1;
       Constraints c2;
-      c2.edgeConstraints.emplace(
-          EdgeConstraint(conflict.time - time_offset_agent2, conflict.x2,
-                         conflict.y2, conflict.x1, conflict.y1));
+      c2.edgeConstraints.emplace(EdgeConstraint(
+              conflict.time, conflict.x2, conflict.y2, conflict.x1, conflict.y1));
       constraints[conflict.agent2] = c2;
     }
   }
@@ -629,11 +623,11 @@ int main(int argc, char* argv[]) {
   }
 
   Environment mapf(dimx, dimy, obstacles, goals);
-  CBSMod<State, Action, int, Conflict, Constraints, Environment> cbs(&mapf);
+  CBS<State, Action, int, Conflict, Constraints, Environment> cbs(&mapf);
   std::vector<PlanResult<State, Action, int>> solution;
 
   Timer timer;
-  bool success = cbs.search(startStates, solution, {0, 1, 2});
+  bool success = cbs.search(startStates, solution);
   timer.stop();
 
   if (success) {

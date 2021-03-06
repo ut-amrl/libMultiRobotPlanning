@@ -9,6 +9,10 @@ namespace libMultiRobotPlanning {
 namespace wampf {
 
 // Replace region of current_path from repair_start to repair_end with repair.
+// TODO: - Adjust times if the length of repair is greater than length of current
+//         path
+//       - NP_CHECK that the length of repair is greater than or equal to the
+//         current path
 template <typename State, typename Action>
 PlanResult<State, Action, int> InsertPathRepair(
     PlanResult<State, Action, int> current_path,
@@ -24,6 +28,7 @@ PlanResult<State, Action, int> InsertPathRepair(
   const auto repair_cost_delta =
       repair.cost - (current_path.states[repair_end].second -
                      current_path.states[repair_start].second);
+
   // Increase state costs in current path based on cost of repair.
   for (int i = repair_end + 1; i < static_cast<int>(current_path.states.size());
        ++i) {
@@ -84,15 +89,18 @@ std::optional<std::pair<int, int>> GetWindowStartGoalIndex(
       start_idx = i;
     }
     end_idx = i;
-    //    if (path.states[i].second == path.cost) break;
   }
   if (start_idx != end_idx) {
     return {{start_idx, end_idx}};
   }
   // Either only one state in the window or both indexes are -1.
+  //TODO: Ask Kyle why we don't include the robot if there is only one state
+  //      in the window
   return {};
 }
 
+// this gives you a vector containing the indices of the first and last state
+// of the agent in the window
 template <typename State, typename Action, typename Window>
 std::vector<std::pair<int, int>> GetWindowStartGoalIndexes(
     const std::vector<PlanResult<State, Action, int>>& joint_path,

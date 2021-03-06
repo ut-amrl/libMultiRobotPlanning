@@ -69,7 +69,7 @@ set(ALL_SOURCE_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/example/wampf_state.h
   ${CMAKE_CURRENT_SOURCE_DIR}/example/wampf_naive_cbs.h
   ${CMAKE_CURRENT_SOURCE_DIR}/example/wampf_naive_cbs_env.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/example/wampf_environment_view.h
+#  ${CMAKE_CURRENT_SOURCE_DIR}/example/wampf_environment_view.h
         ${CMAKE_CURRENT_SOURCE_DIR}/example/four_grid_env_view.h
   ${CMAKE_CURRENT_SOURCE_DIR}/example/timer.hpp
 
@@ -135,7 +135,7 @@ target_link_libraries(cbs
   ${Boost_LIBRARIES}
   yaml-cpp
 )
-#
+
 ### cbs_ta
 #add_executable(cbs_ta
 #  example/cbs_ta.cpp
@@ -206,7 +206,7 @@ add_executable(wampf_tester
 target_link_libraries(wampf_tester
   ${Boost_LIBRARIES}
   yaml-cpp
-  gtest 
+  gtest
   gtest_main
   pthread
 )

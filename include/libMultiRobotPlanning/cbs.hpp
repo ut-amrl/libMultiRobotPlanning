@@ -37,7 +37,7 @@ class CBS {
 
     // std::priority_queue<HighLevelNode> open;
     typename boost::heap::d_ary_heap<HighLevelNode, boost::heap::arity<2>,
-                                     boost::heap::mutable_<true> >
+                                     boost::heap::mutable_<true>>
         open;
 
     auto handle = open.push(start);

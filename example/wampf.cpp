@@ -20,31 +20,33 @@
 #include "wampf_state.h"
 #include "wampf_window.h"
 
-using libMultiRobotPlanning::IndividualSpaceAction;
+using Action = libMultiRobotPlanning::IndividualSpaceAction;
 using libMultiRobotPlanning::IndividualSpaceAStar;
 using libMultiRobotPlanning::IndividualSpaceEnvironment;
 using libMultiRobotPlanning::Neighbor;
 using libMultiRobotPlanning::PlanResult;
-using libMultiRobotPlanning::State;
+using State = libMultiRobotPlanning::State;
+using Location = libMultiRobotPlanning::Location;
 using wampf_impl::NaiveACBSImplementation;
 
-using Env = naive_cbs_wampf_impl::NaiveCBSEnvironment<State>;
+using Env = naive_cbs_wampf_impl::NaiveCBSEnvironment<Location>;
 using EnvView = naive_cbs_wampf_impl::FourConnectedEnvironmentView<
-    naive_cbs_wampf_impl::NaiveCBSEnvironment<State>>;
+        naive_cbs_wampf_impl::NaiveCBSEnvironment<Location>>;
 using Window = libMultiRobotPlanning::Window<Env, EnvView>;
 using Cost = int;
+using JointLoc = std::vector<Location>;
 using JointState = std::vector<State>;
-using JointPath = std::vector<PlanResult<State, IndividualSpaceAction, Cost>>;
+using JointPath = std::vector<PlanResult<State, Action, Cost>>;
 using WAMPF = libMultiRobotPlanning::wampf::WAMPF<
-    State, IndividualSpaceAction, Cost, Window,
-    IndividualSpaceAStar<State, IndividualSpaceAction, Cost,
+    State, Location, Action, Cost, Window,
+    IndividualSpaceAStar<State, Location, Action, Cost,
                          IndividualSpaceEnvironment>,
     NaiveACBSImplementation>;
 
 namespace po = boost::program_options;
 
-std::optional<std::tuple<int, int, std::unordered_set<State>,
-                         std::vector<State>, std::vector<State>, std::string>>
+std::optional<std::tuple<int, int, std::unordered_set<Location>,
+                         JointState, JointLoc, std::string>>
 ParseInputYAML(int argc, char** argv) {
   po::options_description desc("Allowed options");
   std::string input_file;
@@ -72,8 +74,8 @@ ParseInputYAML(int argc, char** argv) {
 
   YAML::Node config = YAML::LoadFile(input_file);
 
-  std::unordered_set<State> obstacles;
-  JointState goal_state;
+  std::unordered_set<Location> obstacles;
+  JointLoc goal_state;
   JointState start_state;
 
   const auto& dim = config["map"]["dimensions"];
@@ -81,14 +83,14 @@ ParseInputYAML(int argc, char** argv) {
   int dimy = dim[1].as<int>();
 
   for (const auto& node : config["map"]["obstacles"]) {
-    obstacles.insert(State(node[0].as<int>(), node[1].as<int>()));
+    obstacles.insert(Location(node[0].as<int>(), node[1].as<int>()));
   }
 
   for (const auto& node : config["agents"]) {
     const auto& start = node["start"];
     const auto& goal = node["goal"];
-    start_state.emplace_back(State(start[0].as<int>(), start[1].as<int>()));
-    goal_state.emplace_back(State(goal[0].as<int>(), goal[1].as<int>()));
+    start_state.emplace_back(State(0, start[0].as<int>(), start[1].as<int>()));
+    goal_state.emplace_back(Location(goal[0].as<int>(), goal[1].as<int>()));
   }
 
   return {{dimx, dimy, obstacles, start_state, goal_state, output_file}};

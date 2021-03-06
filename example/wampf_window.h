@@ -1,13 +1,17 @@
 #pragma once
 
 #include <algorithm>
-#include <libMultiRobotPlanning/cbs_mod.hpp>
+#include <libMultiRobotPlanning/cbs.hpp>
 #include <vector>
 
 #include "wampf_state.h"
 
 #include "four_grid_env_view.h"
 #include "wampf_naive_cbs_env.h"
+using State = libMultiRobotPlanning::State;
+using Action = libMultiRobotPlanning::IndividualSpaceAction;
+using Location = libMultiRobotPlanning::Location;
+
 namespace libMultiRobotPlanning {
 
 template <typename Env, typename EnvView, int kStartRadius = 2,
@@ -19,23 +23,22 @@ struct Window {
  public:
   std::vector<size_t> agent_idxs_;
   EnvView env_view_;
-  CBSMod<naive_cbs_wampf_impl::CBSState, naive_cbs_wampf_impl::CBSAction, int,
-         naive_cbs_wampf_impl::Conflict, naive_cbs_wampf_impl::Constraints,
+  CBS<State, Action, int, naive_cbs_wampf_impl::Conflict, naive_cbs_wampf_impl::Constraints,
          EnvView>
       cbs_;
 
-  Window(State state, const std::vector<size_t> agent_idxs, const Env* env)
+  Window(Location location, const std::vector<size_t> agent_idxs, const Env* env)
       : agent_idxs_(agent_idxs),
-        env_view_(state, std::vector<State>(), env),
+        env_view_(location, std::vector<Location>(), env),
         cbs_(&env_view_) {}
 
   Window(const std::vector<size_t> agent_idxs, EnvView view)
       : agent_idxs_(agent_idxs), env_view_(std::move(view)), cbs_(&env_view_) {}
 
-  Window(State min_pos, State max_pos, const std::vector<size_t> agent_idxs,
+  Window(Location min_pos, Location max_pos, const std::vector<size_t> agent_idxs,
          const Env* env)
       : agent_idxs_(agent_idxs),
-        env_view_(min_pos, max_pos, std::vector<State>(), env),
+        env_view_(min_pos, max_pos, std::vector<Location>(), env),
         cbs_(&env_view_) {}
 
   Window(const Window&) = delete;
@@ -65,6 +68,8 @@ struct Window {
   }
 
   bool Contains(const State& s) const { return env_view_.Contains(s); }
+
+  bool Contains(const Location& s) const { return env_view_.Contains(s); }
 
   bool OverlappingAgents(const Window& other) const {
     for (const auto& a : other.agent_idxs_) {

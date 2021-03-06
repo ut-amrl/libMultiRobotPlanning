@@ -7,22 +7,23 @@
 
 namespace libMultiRobotPlanning {
 
-template <typename State, typename Action, typename Cost, typename Environment,
-          typename StateHasher = std::hash<State>>
+template <typename State, typename Location, typename Action, typename Cost,
+          typename Environment, typename StateHasher = std::hash<State>>
 struct IndividualSpaceAStar {
   using JointState = std::vector<State>;
+  using JointLoc = std::vector<Location>;
 
  private:
   size_t dimx_;
   size_t dimy_;
-  std::unordered_set<State> obstacles_;
+  std::unordered_set<Location> obstacles_;
   JointState joint_start_;
-  JointState joint_goal_;
+  JointLoc joint_goal_;
 
  public:
   IndividualSpaceAStar(size_t dimx, size_t dimy,
-                       std::unordered_set<State> obstacles,
-                       JointState joint_start, JointState joint_goal)
+                       std::unordered_set<Location> obstacles,
+                       JointState joint_start, JointLoc joint_goal)
       : dimx_(dimx),
         dimy_(dimy),
         obstacles_(std::move(obstacles)),
@@ -35,7 +36,7 @@ struct IndividualSpaceAStar {
     std::vector<PlanResult<State, Action, Cost>> results;
     for (size_t i = 0; i < joint_goal_.size(); ++i) {
       const State& start = joint_start_[i];
-      const State& goal = joint_goal_[i];
+      const Location& goal = joint_goal_[i];
       Environment env(dimx_, dimy_, obstacles_, goal);
       AStar<State, Action, int, Environment> astar(&env);
       PlanResult<State, Action, Cost> solution;

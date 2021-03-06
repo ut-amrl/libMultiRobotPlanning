@@ -7,75 +7,79 @@
 #include <libMultiRobotPlanning/cbs.hpp>
 #include <libMultiRobotPlanning/neighbor.hpp>
 #include <libMultiRobotPlanning/planresult.hpp>
+#include "wampf_individual.h"
 
-namespace naive_cbs_wampf_impl {
+//namespace naive_cbs_wampf_impl {
 
 using libMultiRobotPlanning::Neighbor;
 using libMultiRobotPlanning::PlanResult;
+using Action = libMultiRobotPlanning::IndividualSpaceAction;
+using State = libMultiRobotPlanning::State;
+using Location = libMultiRobotPlanning::Location;
 
-struct CBSState {
-  CBSState(int time, int x, int y) : time(time), x(x), y(y) {}
+//struct CBSState {
+//  CBSState(int time, int x, int y) : time(time), x(x), y(y) {}
+//
+//  bool operator==(const CBSState& s) const {
+//    return time == s.time && x == s.x && y == s.y;
+//  }
+//
+//  bool equalExceptTime(const CBSState& s) const { return x == s.x && y == s.y; }
+//
+//  friend std::ostream& operator<<(std::ostream& os, const CBSState& s) {
+//    return os << s.time << ": (" << s.x << "," << s.y << ")";
+//  }
+//
+//  int time;
+//  int x;
+//  int y;
+//};
+//}  // namespace naive_cbs_wampf_impl
+//
+//namespace std {
+//template <>
+//struct hash<naive_cbs_wampf_impl::CBSState> {
+//  size_t operator()(const naive_cbs_wampf_impl::CBSState& s) const {
+//    size_t seed = 0;
+//    boost::hash_combine(seed, s.time);
+//    boost::hash_combine(seed, s.x);
+//    boost::hash_combine(seed, s.y);
+//    return seed;
+//  }
+//};
+//}  // namespace std
 
-  bool operator==(const CBSState& s) const {
-    return time == s.time && x == s.x && y == s.y;
-  }
-
-  bool equalExceptTime(const CBSState& s) const { return x == s.x && y == s.y; }
-
-  friend std::ostream& operator<<(std::ostream& os, const CBSState& s) {
-    return os << s.time << ": (" << s.x << "," << s.y << ")";
-  }
-
-  int time;
-  int x;
-  int y;
-};
-}  // namespace naive_cbs_wampf_impl
-
-namespace std {
-template <>
-struct hash<naive_cbs_wampf_impl::CBSState> {
-  size_t operator()(const naive_cbs_wampf_impl::CBSState& s) const {
-    size_t seed = 0;
-    boost::hash_combine(seed, s.time);
-    boost::hash_combine(seed, s.x);
-    boost::hash_combine(seed, s.y);
-    return seed;
-  }
-};
-}  // namespace std
-
-namespace naive_cbs_wampf_impl {
-enum class CBSAction {
-  Up,
-  Down,
-  Left,
-  Right,
-  Wait,
-};
-
-std::ostream& operator<<(std::ostream& os,
-                         const naive_cbs_wampf_impl::CBSAction& a) {
-  switch (a) {
-    case CBSAction::Up:
-      os << "Up";
-      break;
-    case CBSAction::Down:
-      os << "Down";
-      break;
-    case CBSAction::Left:
-      os << "Left";
-      break;
-    case CBSAction::Right:
-      os << "Right";
-      break;
-    case CBSAction::Wait:
-      os << "Wait";
-      break;
-  }
-  return os;
-}
-}  // namespace naive_cbs_wampf_impl
+//namespace naive_cbs_wampf_impl {
+//enum class CBSAction {
+//  Up,
+//  Down,
+//  Left,
+//  Right,
+//  Wait,
+//};
+//
+//std::ostream& operator<<(std::ostream& os,
+//                         const naive_cbs_wampf_impl::CBSAction& a) {
+//  switch (a) {
+//    case CBSAction::Up:
+//      os << "Up";
+//      break;
+//    case CBSAction::Down:
+//      os << "Down";
+//      break;
+//    case CBSAction::Left:
+//      os << "Left";
+//      break;
+//    case CBSAction::Right:
+//      os << "Right";
+//      break;
+//    case CBSAction::Wait:
+//      os << "Wait";
+//      break;
+//  }
+//  return os;
+//}
+//}  // namespace naive_cbs_wampf_impl
 
 namespace naive_cbs_wampf_impl {
 struct Conflict {
@@ -239,15 +243,126 @@ class NaiveCBSEnvironment {
 
   NaiveCBSEnvironment& operator=(const NaiveCBSEnvironment&) = delete;
 
-  //  std::pair<CBSState, int> getStatesPad(const CBSState& pos) {
-  //    return {{0, pos.x, pos.y}, 0}
-  //  }
-  //
-  std::pair<CBSAction, int> getActionsPad() { return {CBSAction::Wait, 0}; }
+  std::pair<Action, int> getActionsPad() { return {Action::Wait, 0}; }
 
   bool getFirstConflict(
-      const std::vector<PlanResult<CBSState, CBSAction, int>>& solution,
+          const std::vector<PlanResult<State, Action, int>>& solution,
+          Conflict& result) const {
+
+    // setting up entry_times, a vector that stores {entry time, agent idx}
+    std::vector<std::pair<int,int>> entry_times;
+    int last_exit = 0;
+    for (size_t i = 0; i < solution.size(); i++) {
+      NP_CHECK(solution[i].states.size() > 0);
+      last_exit = std::max<int>(last_exit, solution[i].states[0].first.time + solution[i].actions.size());
+      entry_times.push_back({solution[i].states[0].first.time, i});
+    }
+    std::sort(entry_times.begin(), entry_times.end());
+    NP_CHECK(entry_times.size() > 1);
+    NP_CHECK(solution.size() > 1);
+    NP_CHECK_EQ(entry_times.size(), solution.size());
+
+    // stores the index of the current state inside each agent's
+    // PlanResult.states in solution
+    std::vector<int> state_idx_tracker(solution.size(), -1);
+
+    // agent_idxs stores the set of agent indices that are in the window at time
+    // t. updated as we iterate.
+    std::vector<int> agent_idxs(solution.size());
+
+    int entry_time_i = 0;
+
+    // if there is only one agent in the beginning of the window, we need to
+    // add it to agent_idxs and update its state_idx_tracker value
+    if (entry_times[0].first < entry_times[1].first) {
+      agent_idxs.push_back(entry_times[0].second);
+      state_idx_tracker[entry_times[0].second] = entry_times[1].first - entry_times[0].first - 1;
+      entry_time_i++;
+    }
+
+    // Here, we iterate over each time step, checking collisions
+    for (int t = entry_times[1].first; t <= last_exit; t++) {
+
+      // adding agents to agent_idxs if they just entered the window
+      while (entry_time_i < static_cast<int>(entry_times.size()) && entry_times[entry_time_i].first == t) {
+        agent_idxs.push_back(entry_times[entry_time_i].second);
+        entry_time_i++;
+      }
+
+      // updating state_idx_tracker
+      int agent_idxs_size = agent_idxs.size();
+      for (int i = 0; i < agent_idxs_size; i++) {
+        state_idx_tracker[agent_idxs[i]]++;
+        // if an agent has reached its goal or left the window, we adjust
+        // state_idx_tracker or remove it from agent_idxs
+        if (state_idx_tracker[agent_idxs[i]] >= static_cast<int>(solution[agent_idxs[i]].states.size())) {
+          if (goals_[agent_idxs[i]].StateEquals(solution[agent_idxs[i]].states.back().first)) {
+            state_idx_tracker[agent_idxs[i]] = solution[agent_idxs[i]].states.size() - 1;
+          } else {
+            agent_idxs.erase(agent_idxs.begin() + i);
+            agent_idxs_size--;
+          }
+        }
+      }
+
+      // checking for vertex conflicts between agents in agent_idxs
+      for (size_t i = 0; i < agent_idxs.size(); i++) {
+        const State& s1 = solution[agent_idxs[i]].states[state_idx_tracker[agent_idxs[i]]].first;
+        for (size_t j = i + 1; j < agent_idxs.size(); j++) {
+          const State& s2 = solution[agent_idxs[j]].states[state_idx_tracker[agent_idxs[j]]].first;
+          if (s1 == s2) {
+            result.time = t;
+            result.agent1 = i;
+            result.agent2 = j;
+            result.type = Conflict::Vertex;
+            result.x1 = s1.x;
+            result.y1 = s1.y;
+            return true;
+          }
+        }
+      }
+
+      // checking for edge conflicts between agents in agent_idxs
+      for (size_t i = 0; i < agent_idxs.size(); i++) {
+        NP_CHECK(state_idx_tracker[agent_idxs[i]] < static_cast<int>(solution[agent_idxs[i]].states.size()));
+        // if this robot is at its window goal at time t, it cannot have an edge
+        // conflict with another robot betwen t and t + 1
+        if (state_idx_tracker[agent_idxs[i]] + 1 == static_cast<int>(solution[agent_idxs[i]].states.size())) {
+          continue;
+        }
+        const State& s1a = solution[agent_idxs[i]].states[state_idx_tracker[agent_idxs[i]]].first;
+        const State& s1b = solution[agent_idxs[i]].states[state_idx_tracker[agent_idxs[i]] + 1].first;
+        for (size_t j = i + 1; j < agent_idxs.size(); j++) {
+          NP_CHECK(state_idx_tracker[agent_idxs[j]] < static_cast<int>(solution[agent_idxs[j]].states.size()));
+          // if this robot is at its window goal at time t, it cannot have an edge
+          // conflict with another robot betwen t and t + 1
+          if (state_idx_tracker[agent_idxs[j]] + 1 == static_cast<int>(solution[agent_idxs[j]].states.size())) {
+            continue;
+          }
+          const State& s2a = solution[agent_idxs[j]].states[state_idx_tracker[agent_idxs[j]]].first;
+          const State& s2b = solution[agent_idxs[j]].states[state_idx_tracker[agent_idxs[j]] + 1].first;
+          if ((s1a.x == s2b.x && s1a.y == s2b.y && s1a.time + 1 == s2b.time) &&
+              (s2a.x == s1b.x && s2a.y == s1b.y && s2a.time + 1 == s1b.time)) {
+            result.time = t;
+            result.agent1 = i;
+            result.agent2 = j;
+            result.type = Conflict::Edge;
+            result.x1 = s1a.x;
+            result.y1 = s1a.y;
+            result.x2 = s1b.x;
+            result.y2 = s1b.y;
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  bool getFirstConflictOld(
+      const std::vector<PlanResult<State, Action, int>>& solution,
       Conflict& result) const {
+
     int max_t = 0;
     for (const auto& sol : solution) {
       max_t = std::max<int>(max_t, sol.states.size() - 1);
@@ -256,9 +371,9 @@ class NaiveCBSEnvironment {
     for (int t = 0; t < max_t; ++t) {
       // check drive-drive vertex collisions
       for (size_t i = 0; i < solution.size(); ++i) {
-        CBSState CBSState1 = GetCBSState(i, solution, t);
+        State CBSState1 = GetCBSState(i, solution, t);
         for (size_t j = i + 1; j < solution.size(); ++j) {
-          CBSState CBSState2 = GetCBSState(j, solution, t);
+          State CBSState2 = GetCBSState(j, solution, t);
           if (CBSState1.equalExceptTime(CBSState2)) {
             result.time = t;
             result.agent1 = i;
@@ -272,11 +387,11 @@ class NaiveCBSEnvironment {
       }
       // drive-drive edge (swap)
       for (size_t i = 0; i < solution.size(); ++i) {
-        CBSState CBSState1a = GetCBSState(i, solution, t);
-        CBSState CBSState1b = GetCBSState(i, solution, t + 1);
+        State CBSState1a = GetCBSState(i, solution, t);
+        State CBSState1b = GetCBSState(i, solution, t + 1);
         for (size_t j = i + 1; j < solution.size(); ++j) {
-          CBSState CBSState2a = GetCBSState(j, solution, t);
-          CBSState CBSState2b = GetCBSState(j, solution, t + 1);
+          State CBSState2a = GetCBSState(j, solution, t);
+          State CBSState2b = GetCBSState(j, solution, t + 1);
           if (CBSState1a.equalExceptTime(CBSState2b) &&
               CBSState1b.equalExceptTime(CBSState2a)) {
             result.time = t;
@@ -344,13 +459,13 @@ class NaiveCBSEnvironment {
     }
   }
 
-  void FixPadTime(std::vector<std::pair<CBSState, int>>& sol) const {
+  void FixPadTime(std::vector<std::pair<State, int>>& sol) const {
     for (int i = 0; i < static_cast<int>(sol.size()); i++) {
       sol[i].first.time = i;
     }
   }
 
-  bool CBSStateBoundsCheck(const CBSState& s) const {
+  bool CBSStateBoundsCheck(const State& s) const {
     return s.x >= 0 && s.x < dimx_ && s.y >= 0 && s.y < dimy_ &&
            obstacles_.find({s.x, s.y}) == obstacles_.end();
   }
@@ -358,9 +473,9 @@ class NaiveCBSEnvironment {
   std::pair<int, int> GetDims() const { return {dimx_, dimy_}; }
 
  private:
-  CBSState GetCBSState(
+  State GetCBSState(
       size_t agentIdx,
-      const std::vector<PlanResult<CBSState, CBSAction, int>>& solution,
+      const std::vector<PlanResult<State, Action, int>>& solution,
       size_t t) const {
     NP_CHECK(agentIdx < solution.size());
     if (t < solution[agentIdx].states.size()) {

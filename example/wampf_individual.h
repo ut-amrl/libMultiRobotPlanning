@@ -36,7 +36,7 @@ std::ostream& operator<<(std::ostream& os, const IndividualSpaceAction& a) {
 class IndividualSpaceEnvironment {
  public:
   IndividualSpaceEnvironment(size_t dimx, size_t dimy,
-                             std::unordered_set<State> obstacles, State goal)
+                             std::unordered_set<Location> obstacles, Location goal)
       : dimx_(dimx),
         dimy_(dimy),
         obstacles_(std::move(obstacles)),
@@ -47,29 +47,29 @@ class IndividualSpaceEnvironment {
     return std::abs(s.x - goal_.x) + std::abs(s.y - goal_.y);
   }
 
-  bool isSolution(const State& s) { return s == goal_; }
+  bool isSolution(const State& s) { return Location(s.x, s.y) == goal_; }
 
   void getNeighbors(
       const State& s,
       std::vector<Neighbor<State, IndividualSpaceAction, int>>& neighbors) {
     neighbors.clear();
 
-    State up(s.x, s.y + 1);
+    State up(s.time + 1, s.x, s.y + 1);
     if (stateValid(up)) {
       neighbors.emplace_back(Neighbor<State, IndividualSpaceAction, int>(
           up, IndividualSpaceAction::Up, 1));
     }
-    State down(s.x, s.y - 1);
+    State down(s.time + 1, s.x, s.y - 1);
     if (stateValid(down)) {
       neighbors.emplace_back(Neighbor<State, IndividualSpaceAction, int>(
           down, IndividualSpaceAction::Down, 1));
     }
-    State left(s.x - 1, s.y);
+    State left(s.time + 1, s.x - 1, s.y);
     if (stateValid(left)) {
       neighbors.emplace_back(Neighbor<State, IndividualSpaceAction, int>(
           left, IndividualSpaceAction::Left, 1));
     }
-    State right(s.x + 1, s.y);
+    State right(s.time + 1, s.x + 1, s.y);
     if (stateValid(right)) {
       neighbors.emplace_back(Neighbor<State, IndividualSpaceAction, int>(
           right, IndividualSpaceAction::Right, 1));
@@ -82,13 +82,13 @@ class IndividualSpaceEnvironment {
 
   bool stateValid(const State& s) {
     return s.x >= 0 && s.x < dimx_ && s.y >= 0 && s.y < dimy_ &&
-           obstacles_.find(s) == obstacles_.end();
+           obstacles_.find({s.x, s.y}) == obstacles_.end();
   }
 
  private:
   int dimx_;
   int dimy_;
-  std::unordered_set<State> obstacles_;
-  State goal_;
+  std::unordered_set<Location> obstacles_;
+  Location goal_;
 };
 }  // namespace libMultiRobotPlanning

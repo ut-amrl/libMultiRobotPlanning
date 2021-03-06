@@ -8,11 +8,12 @@
 namespace libMultiRobotPlanning {
 namespace wampf {
 
-template <typename State, typename Action, typename Cost, typename Window,
+template <typename State, typename Location, typename Action, typename Cost, typename Window,
           typename IndividualPlanner, typename WAMPFImplementation,
           typename StateHasher = std::hash<std::vector<State>>>
 class WAMPF {
  public:
+  using JointLoc = std::vector<Location>;
   using JointState = std::vector<State>;
   using JointPath = std::vector<PlanResult<State, Action, Cost>>;
 
@@ -23,8 +24,8 @@ class WAMPF {
   WAMPFImplementation impl_;
 
  public:
-  WAMPF(size_t dimx, size_t dimy, std::unordered_set<State> obstacles,
-        const JointState& start, const JointState& goal)
+  WAMPF(size_t dimx, size_t dimy, std::unordered_set<Location> obstacles,
+        const JointState& start, const JointLoc& goal)
       : pi_(),
         individual_plan_cost_(0),
         W_(),

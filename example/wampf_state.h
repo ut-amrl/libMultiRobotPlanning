@@ -4,7 +4,6 @@
 
 namespace libMultiRobotPlanning {
 
-
 struct State {
   State(int time, int x, int y) : time(time), x(x), y(y) {}
 
@@ -44,7 +43,6 @@ struct hash<libMultiRobotPlanning::State> {
 
 namespace libMultiRobotPlanning {
 
-
 struct Location {
   Location(int x, int y) : x(x), y(y) {}
 
@@ -55,9 +53,7 @@ struct Location {
 
   bool StateEquals(const State& s) const { return x == s.x && y == s.y; }
 
-  bool operator==(const Location& s) const {
-    return x == s.x && y == s.y;
-  }
+  bool operator==(const Location& s) const { return x == s.x && y == s.y; }
 
   friend std::ostream& operator<<(std::ostream& os, const Location& s) {
     return os << "(" << s.x << "," << s.y << ")";

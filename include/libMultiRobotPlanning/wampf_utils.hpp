@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <unordered_map>
 
 #include <libMultiRobotPlanning/planresult.hpp>
 #include <libMultiRobotPlanning/utils.hpp>
@@ -9,7 +10,8 @@ namespace libMultiRobotPlanning {
 namespace wampf {
 
 // Replace region of current_path from repair_start to repair_end with repair.
-// TODO: - Adjust times if the length of repair is greater than length of current
+// TODO: - Adjust times if the length of repair is greater than length of
+// current
 //         path
 //       - NP_CHECK that the length of repair is greater than or equal to the
 //         current path
@@ -38,9 +40,11 @@ PlanResult<State, Action, int> InsertPathRepair(
   current_path.fmin += repair_cost_delta;
 
   // Increase state costs in repair to match current path entry.
-  const auto repair_start_cost = current_path.states[repair_start].second;
-  for (auto& e : repair.states) {
-    e.second += repair_start_cost;
+  repair.states[0].second = current_path.states[repair_start].second;
+  repair.states[0].first.time = current_path.states[repair_start].first.time;
+  for (size_t i = 1; i < repair.states.size(); i++) {
+    repair.states[i].second = repair.states[i - 1].second + 1;
+    repair.states[i].first.time = repair.states[i - 1].first.time + 1;
   }
 
   const int current_state_start = repair_start + 1;
@@ -55,7 +59,10 @@ PlanResult<State, Action, int> InsertPathRepair(
       current_path.actions.begin() + current_action_start,
       current_path.actions.begin() + current_action_end + 1);
 
-  NP_CHECK(current_path.states[repair_start] == repair.states.front());
+  NP_CHECK(current_path.states[repair_start].first.equalExceptTime(
+      repair.states.front().first));
+  NP_CHECK(current_path.states[repair_start].second ==
+           repair.states.front().second);
 
   current_path.states.insert(current_path.states.begin() + current_state_start,
                              repair.states.begin() + 1, repair.states.end());
@@ -94,7 +101,7 @@ std::optional<std::pair<int, int>> GetWindowStartGoalIndex(
     return {{start_idx, end_idx}};
   }
   // Either only one state in the window or both indexes are -1.
-  //TODO: Ask Kyle why we don't include the robot if there is only one state
+  // TODO: Ask Kyle why we don't include the robot if there is only one state
   //      in the window
   return {};
 }
@@ -112,6 +119,21 @@ std::vector<std::pair<int, int>> GetWindowStartGoalIndexes(
     const auto res = GetWindowStartGoalIndex(path, window);
     NP_CHECK(res);
     idxs.emplace_back(std::move(*res));
+  }
+  return idxs;
+}
+
+template <typename State, typename Action, typename Window>
+std::unordered_map<int, std::pair<int, int>> GetWindowStartGoalIndexMap(
+    const std::vector<PlanResult<State, Action, int>>& joint_path,
+    const Window& window) {
+  std::unordered_map<int, std::pair<int, int>> idxs;
+  for (const auto& idx : window.agent_idxs_) {
+    NP_CHECK(idx < joint_path.size());
+    const auto& path = joint_path[idx];
+    const auto res = GetWindowStartGoalIndex(path, window);
+    NP_CHECK(res);
+    idxs.emplace(idx, std::move(*res));
   }
   return idxs;
 }

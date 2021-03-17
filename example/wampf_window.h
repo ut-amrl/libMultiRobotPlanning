@@ -23,11 +23,12 @@ struct Window {
  public:
   std::vector<size_t> agent_idxs_;
   EnvView env_view_;
-  CBS<State, Action, int, naive_cbs_wampf_impl::Conflict, naive_cbs_wampf_impl::Constraints,
-         EnvView>
+  CBS<State, Action, int, naive_cbs_wampf_impl::Conflict,
+      naive_cbs_wampf_impl::Constraints, EnvView>
       cbs_;
 
-  Window(Location location, const std::vector<size_t> agent_idxs, const Env* env)
+  Window(Location location, const std::vector<size_t> agent_idxs,
+         const Env* env)
       : agent_idxs_(agent_idxs),
         env_view_(location, std::vector<Location>(), env),
         cbs_(&env_view_) {}
@@ -35,8 +36,8 @@ struct Window {
   Window(const std::vector<size_t> agent_idxs, EnvView view)
       : agent_idxs_(agent_idxs), env_view_(std::move(view)), cbs_(&env_view_) {}
 
-  Window(Location min_pos, Location max_pos, const std::vector<size_t> agent_idxs,
-         const Env* env)
+  Window(Location min_pos, Location max_pos,
+         const std::vector<size_t> agent_idxs, const Env* env)
       : agent_idxs_(agent_idxs),
         env_view_(min_pos, max_pos, std::vector<Location>(), env),
         cbs_(&env_view_) {}

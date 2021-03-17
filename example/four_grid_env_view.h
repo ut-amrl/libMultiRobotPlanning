@@ -131,8 +131,8 @@ class FourConnectedEnvironmentView {
     int min_y = std::min(min_pos_.y, o.min_pos_.y);
     int max_y = std::max(max_pos_.y, o.max_pos_.y);
 
-    return {Location(min_x, min_y), Location(max_x, max_y), std::vector<Location>(),
-            env_};
+    return {Location(min_x, min_y), Location(max_x, max_y),
+            std::vector<Location>(), env_};
   }
 
   void setLowLevelContext(size_t agentIdx, const Constraints* constraints) {
@@ -181,8 +181,7 @@ class FourConnectedEnvironmentView {
     {
       State n(s.time + 1, s.x, s.y + 1);
       if (CBSStateValid(n) && TransitionValid(s, n)) {
-        neighbors.emplace_back(
-            Neighbor<State, Action, int>(n, Action::Up, 1));
+        neighbors.emplace_back(Neighbor<State, Action, int>(n, Action::Up, 1));
       }
     }
     {

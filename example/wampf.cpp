@@ -31,7 +31,7 @@ using wampf_impl::NaiveACBSImplementation;
 
 using Env = naive_cbs_wampf_impl::NaiveCBSEnvironment<Location>;
 using EnvView = naive_cbs_wampf_impl::FourConnectedEnvironmentView<
-        naive_cbs_wampf_impl::NaiveCBSEnvironment<Location>>;
+    naive_cbs_wampf_impl::NaiveCBSEnvironment<Location>>;
 using Window = libMultiRobotPlanning::Window<Env, EnvView>;
 using Cost = int;
 using JointLoc = std::vector<Location>;
@@ -45,8 +45,8 @@ using WAMPF = libMultiRobotPlanning::wampf::WAMPF<
 
 namespace po = boost::program_options;
 
-std::optional<std::tuple<int, int, std::unordered_set<Location>,
-                         JointState, JointLoc, std::string>>
+std::optional<std::tuple<int, int, std::unordered_set<Location>, JointState,
+                         JointLoc, std::string>>
 ParseInputYAML(int argc, char** argv) {
   po::options_description desc("Allowed options");
   std::string input_file;

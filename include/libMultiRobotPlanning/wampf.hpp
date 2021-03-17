@@ -8,8 +8,9 @@
 namespace libMultiRobotPlanning {
 namespace wampf {
 
-template <typename State, typename Location, typename Action, typename Cost, typename Window,
-          typename IndividualPlanner, typename WAMPFImplementation,
+template <typename State, typename Location, typename Action, typename Cost,
+          typename Window, typename IndividualPlanner,
+          typename WAMPFImplementation,
           typename StateHasher = std::hash<std::vector<State>>>
 class WAMPF {
  public:

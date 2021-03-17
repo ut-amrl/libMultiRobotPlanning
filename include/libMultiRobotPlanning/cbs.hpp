@@ -18,7 +18,7 @@ class CBS {
   CBS& operator=(CBS&&) = default;
 
   bool search(const std::vector<State>& initialStates,
-              std::vector<PlanResult<State, Action, Cost> >& solution) {
+              std::vector<PlanResult<State, Action, Cost>>& solution) {
     HighLevelNode start;
     start.solution.resize(initialStates.size());
     start.constraints.resize(initialStates.size());
@@ -91,7 +91,7 @@ class CBS {
 
  private:
   struct HighLevelNode {
-    std::vector<PlanResult<State, Action, Cost> > solution;
+    std::vector<PlanResult<State, Action, Cost>> solution;
     std::vector<Constraints> constraints;
 
     Cost cost;
@@ -99,7 +99,7 @@ class CBS {
     int id;
 
     typename boost::heap::d_ary_heap<HighLevelNode, boost::heap::arity<2>,
-                                     boost::heap::mutable_<true> >::handle_type
+                                     boost::heap::mutable_<true>>::handle_type
         handle;
 
     bool operator<(const HighLevelNode& n) const {
@@ -138,7 +138,7 @@ class CBS {
     bool isSolution(const State& s) { return m_env->isSolution(s); }
 
     void getNeighbors(const State& s,
-                      std::vector<Neighbor<State, Action, Cost> >& neighbors) {
+                      std::vector<Neighbor<State, Action, Cost>>& neighbors) {
       m_env->getNeighbors(s, neighbors);
     }
 

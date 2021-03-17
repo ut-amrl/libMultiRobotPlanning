@@ -70,25 +70,15 @@ void VerifyPathIntegrity(const PR& result) {
   }
 }
 
-void PadPlanResult(PlanResult<State, Action, int>& path,
-                   int required_len) {
+void PadPlanResult(PlanResult<State, Action, int>& path, int required_len) {
   while (static_cast<int>(path.states.size()) < required_len) {
     auto back_state_copy = path.states.back();
     path.states.emplace_back(back_state_copy);
+    path.states.back().second++;
     path.actions.push_back({Action::Wait, 1});
     path.cost += 1;
   }
 }
-
-void FixStateTimes(PlanResult<State, Action, int>& path, int start_idx) {
-  if (start_idx != 0) {
-    path.states[start_idx].first.time = path.states[start_idx - 1].first.time + 1;
-  }
-  for (int i = start_idx + 1; i < path.states.size(); i++) {
-    path.states[i].first.time = path.states[i - 1].first.time;
-  }
-}
-
 TEST(InsertLongerRepair, StraightToUpDown) {
   PR full_path;
   full_path.states = {{{0, 0, 0}, 0}, {{1, 0, 1}, 1}, {{2, 0, 2}, 2},
@@ -102,7 +92,8 @@ TEST(InsertLongerRepair, StraightToUpDown) {
   full_path.fmin = 5;
 
   PR repair;
-  repair.states = {{{1, 0, 1}, 0}, {{2, 1, 1}, 1}, {{3, 1, 2}, 2}, {{4, 0, 2}, 3}};
+  repair.states = {
+      {{1, 0, 1}, 0}, {{2, 1, 1}, 1}, {{3, 1, 2}, 2}, {{4, 0, 2}, 3}};
   repair.actions = {{Action::Right, 1}, {Action::Up, 1}, {Action::Left, 1}};
   repair.cost = 3;
   repair.fmin = 3;
@@ -110,11 +101,12 @@ TEST(InsertLongerRepair, StraightToUpDown) {
   int repair_start = 1;
   int repair_end = 2;
 
-  PadPlanResult(repair, repair_end - repair_start);
+  PadPlanResult(repair, repair_end - repair_start + 1);
 
+  // assumes that the repair has increaasing g values starting at 0 and
+  // increasing time values starting at 0
   PR result = InsertPathRepair(full_path, repair, repair_start, repair_end);
 
-  FixStateTimes(full_path, repair_start);
   EXPECT_EQ(result.cost, 7);
   VerifyPathIntegrity(result);
 }
@@ -140,19 +132,21 @@ TEST(InsertShorterRepair, UpDownToStraight) {
   int repair_start = 1;
   int repair_end = 4;
 
-  PadPlanResult(repair, repair_end - repair_start);
+  PadPlanResult(repair, repair_end - repair_start + 1);
+
+  std::cout << repair << std::endl;
 
   PR result = InsertPathRepair(full_path, repair, repair_start, repair_end);
 
-  FixStateTimes(full_path, repair_start);
-  EXPECT_EQ(result.cost, 3);
+  EXPECT_EQ(result.cost, 5);
   VerifyPathIntegrity(result);
 }
 
 TEST(InsertShorterRepair, UpDownToStraight2) {
   PR full_path;
-  full_path.states = {{{0, 0, 0}, 0}, {{1, 0, 1}, 1}, {{2, 0, 2}, 2}, {{3, 1, 2}, 3},
-                      {{4, 1, 3}, 4}, {{5, 0, 3}, 5}, {{6, 0, 4}, 6}};
+  full_path.states = {{{0, 0, 0}, 0}, {{1, 0, 1}, 1}, {{2, 0, 2}, 2},
+                      {{3, 1, 2}, 3}, {{4, 1, 3}, 4}, {{5, 0, 3}, 5},
+                      {{6, 0, 4}, 6}};
   full_path.actions = {{Action::Up, 1}, {Action::Up, 1},   {Action::Right, 1},
                        {Action::Up, 1}, {Action::Left, 1}, {Action::Up, 1}};
   full_path.cost = 6;
@@ -166,18 +160,18 @@ TEST(InsertShorterRepair, UpDownToStraight2) {
 
   int repair_start = 2;
   int repair_end = 5;
-  PadPlanResult(repair, repair_end - repair_start);
+  PadPlanResult(repair, repair_end - repair_start + 1);
 
   PR result = InsertPathRepair(full_path, repair, repair_start, repair_end);
 
-  FixStateTimes(full_path, repair_start);
-  EXPECT_EQ(result.cost, 4);
+  EXPECT_EQ(result.cost, 6);
   VerifyPathIntegrity(result);
 }
 
-using W = Window<NaiveCBSEnvironment<Location>,
-                 FourConnectedEnvironmentView<NaiveCBSEnvironment<Location>, 1, 1>,
-                 1, 1>;
+using W =
+    Window<NaiveCBSEnvironment<Location>,
+           FourConnectedEnvironmentView<NaiveCBSEnvironment<Location>, 1, 1>, 1,
+           1>;
 NaiveCBSEnvironment<Location> env(10, 11, {{6, 7}, {6, 9}}, {{5, 10}});
 TEST(WindowIntersection, SimpleWindow) {
   PR p1;
@@ -469,8 +463,8 @@ TEST(FourConnectedEnvironmentView, getNeighbors) {
 
 // fourconnected grow
 TEST(FourConnectedEnvironmentView, Grow) {
-  FourConnectedEnvironmentView<NaiveCBSEnvironment<Location>> env_view({6, 3}, {},
-                                                                    &env);
+  FourConnectedEnvironmentView<NaiveCBSEnvironment<Location>> env_view(
+      {6, 3}, {}, &env);
   EXPECT_TRUE(env_view.min_pos_ == Location(4, 1));
   EXPECT_TRUE(env_view.max_pos_ == Location(8, 5));
 
@@ -507,5 +501,109 @@ TEST(Window, ShouldQuit) {
   {
     WDefault w({3, 8}, {4, 9}, {1, 2, 3}, &env);
     EXPECT_FALSE(w.ShouldQuit());
+  }
+}
+
+TEST(NaiveCBSEnvironment, getFirstConflict) {
+  {
+    NaiveCBSEnvironment<Location> conflict_env(15, 15, {{3, 6}, {5, 9}},
+                                               {{1, 1}});
+    PR plan1;
+    plan1.states = {{{1, 7, 4}, 0}, {{2, 7, 5}, 1}, {{3, 7, 6}, 2},
+                    {{4, 6, 6}, 3}, {{5, 5, 6}, 4}, {{6, 4, 6}, 5},
+                    {{7, 3, 6}, 6}};
+    plan1.actions = {{Action::Up, 1},   {Action::Up, 1},   {Action::Left, 1},
+                     {Action::Left, 1}, {Action::Left, 1}, {Action::Left, 1}};
+    plan1.cost = 6;
+
+    PR plan2;
+    plan2.states = {{{3, 5, 4}, 0}, {{4, 5, 5}, 1}, {{5, 5, 6}, 2},
+                    {{6, 5, 7}, 3}, {{7, 5, 8}, 4}, {{8, 5, 9}, 5}};
+    plan2.actions = {{Action::Up, 1},
+                     {Action::Up, 1},
+                     {Action::Up, 1},
+                     {Action::Up, 1},
+                     {Action::Up, 1}};
+    plan2.cost = 5;
+
+    std::vector<PR> solution = {std::move(plan1), std::move(plan2)};
+    Conflict result;
+    conflict_env.getFirstConflict(solution, result);
+    Conflict expected = {5, 0, 1, Conflict::Type::Vertex, 5, 6, -1, -1};
+
+    EXPECT_TRUE(result == expected);
+  }
+  // Can a robot stop at its goal and cause a collision
+  {
+    NaiveCBSEnvironment<Location> conflict_env(15, 15, {}, {{2, 6}, {1, 6}});
+    PR plan1;
+    plan1.states = {{{0, 2, 4}, 0}, {{1, 2, 5}, 1}, {{2, 2, 6}, 2}};
+    plan1.actions = {{Action::Up, 1}, {Action::Up, 1}};
+    plan1.cost = 2;
+
+    PR plan2;
+    plan2.states = {{{7, 3, 4}, 0},
+                    {{8, 3, 5}, 1},
+                    {{9, 3, 6}, 2},
+                    {{10, 2, 6}, 3},
+                    {{11, 1, 6}, 4}};
+    plan2.actions = {
+        {Action::Up, 1}, {Action::Up, 1}, {Action::Left, 1}, {Action::Left, 1}};
+    plan2.cost = 4;
+
+    std::vector<PR> solution = {std::move(plan1), std::move(plan2)};
+    Conflict result;
+    bool success = conflict_env.getFirstConflict(solution, result);
+    EXPECT_TRUE(success);
+
+    Conflict expected = {10, 0, 1, Conflict::Type::Vertex, 2, 6, -1, -1};
+
+    EXPECT_TRUE(result == expected);
+  }
+  // can a robot leave the window and not cause a collision at its exit vertex
+  {
+    NaiveCBSEnvironment<Location> conflict_env(15, 15, {}, {{2, 8}, {1, 6}});
+    PR plan1;
+    plan1.states = {{{2, 2, 4}, 0}, {{3, 2, 5}, 1}, {{4, 2, 6}, 2}};
+    plan1.actions = {{Action::Up, 1}, {Action::Up, 1}};
+    plan1.cost = 2;
+
+    PR plan2;
+    plan2.states = {{{4, 3, 4}, 0},
+                    {{5, 3, 5}, 1},
+                    {{6, 3, 6}, 2},
+                    {{7, 2, 6}, 3},
+                    {{8, 1, 6}, 4}};
+    plan2.actions = {
+        {Action::Up, 1}, {Action::Up, 1}, {Action::Left, 1}, {Action::Left, 1}};
+    plan2.cost = 4;
+
+    std::vector<PR> solution = {std::move(plan1), std::move(plan2)};
+    Conflict result;
+    bool success = conflict_env.getFirstConflict(solution, result);
+    EXPECT_FALSE(success);
+  }
+  // edge collision detection
+  {
+    NaiveCBSEnvironment<Location> conflict_env(15, 15, {}, {{2, 2}, {3, 3}});
+    PR plan1;
+    plan1.states = {{{1, 2, 2}, 0}, {{2, 2, 3}, 1}, {{3, 3, 3}, 2}};
+    plan1.actions = {{Action::Up, 1}, {Action::Up, 1}};
+    plan1.cost = 2;
+
+    PR plan2;
+    plan2.states = {{{2, 3, 3}, 0}, {{3, 2, 3}, 1}, {{4, 2, 2}, 2}};
+    plan2.actions = {
+        {Action::Up, 1}, {Action::Up, 1}, {Action::Left, 1}, {Action::Left, 1}};
+    plan2.cost = 4;
+
+    std::vector<PR> solution = {std::move(plan1), std::move(plan2)};
+    Conflict result;
+    bool success = conflict_env.getFirstConflict(solution, result);
+    EXPECT_TRUE(success);
+
+    Conflict expected = {2, 0, 1, Conflict::Type::Edge, 2, 3, 3, 3};
+
+    EXPECT_TRUE(result == expected);
   }
 }

@@ -78,18 +78,25 @@ class NaiveACBSImplementation {
     return {min_start_idx, max_goal_idx};
   }
 
-  //TODO: fix start_state and goal_state, fix InsertPathRepair to work with new
+  // TODO: fix start_state and goal_state, fix InsertPathRepair to work with new
   //      format of repairs
   void PlanIn(std::unique_ptr<Window>& w) {
-//    auto [time_offsets, start_goal_idxs] = GetStartEndIndices(*w);
+    //    auto [time_offsets, start_goal_idxs] = GetStartEndIndices(*w);
     const auto start_goal_idxs =
-            libMultiRobotPlanning::wampf::GetWindowStartGoalIndexes(*path_, *w);
+        libMultiRobotPlanning::wampf::GetWindowStartGoalIndexMap(*path_, *w);
 
     JointState start_state;
     JointLoc goals;
     for (size_t i = 0; i < w->agent_idxs_.size(); i++) {
-      start_state.push_back((*path_)[w->agent_idxs_[i]].states[start_goal_idxs[w->agent_idxs_[i]].first].first);
-      const State& goal_state = (*path_)[w->agent_idxs_[i]].states[start_goal_idxs[w->agent_idxs_[i]].second].first;
+      std::cout << i << std::endl;
+      start_state.push_back(
+          (*path_)[w->agent_idxs_[i]]
+              .states[start_goal_idxs.at(w->agent_idxs_[i]).first]
+              .first);
+      const State& goal_state =
+          (*path_)[w->agent_idxs_[i]]
+              .states[start_goal_idxs.at(w->agent_idxs_[i]).second]
+              .first;
       goals.push_back({goal_state.x, goal_state.y});
     }
 
@@ -109,7 +116,8 @@ class NaiveACBSImplementation {
     // you need to pad when goal_idx - start_idx is greater than the size of
     // the states vector for an agent's repair
     for (size_t i = 0; i < repair.size(); i++) {
-      int required_len = start_goal_idxs[i].second - start_goal_idxs[i].first;
+      int required_len = start_goal_idxs.at(w->agent_idxs_[i]).second -
+                         start_goal_idxs.at(w->agent_idxs_[i]).first + 1;
       if (required_len > static_cast<int>(repair[i].states.size())) {
         PadPlanResult(repair[i], required_len);
       }
@@ -124,9 +132,8 @@ class NaiveACBSImplementation {
       NP_CHECK(path_idx < path_->size());
       auto& local_path = (*path_)[path_idx];
       local_path = libMultiRobotPlanning::wampf::InsertPathRepair(
-          local_path, repair[i], start_goal_idxs[i].first,
-          start_goal_idxs[i].second);
-      FixStateTimes(local_path, start_goal_idxs[i].first);
+          local_path, repair[i], start_goal_idxs.at(w->agent_idxs_[i]).first,
+          start_goal_idxs.at(w->agent_idxs_[i]).second);
     }
   }
 
@@ -136,20 +143,12 @@ class NaiveACBSImplementation {
   }
 
  private:
-  void FixStateTimes(PlanResult<State, Action, int>& path, int start_idx) {
-    if (start_idx != 0) {
-      path.states[start_idx].first.time = path.states[start_idx - 1].first.time + 1;
-    }
-    for (size_t i = start_idx + 1; i < path.states.size(); i++) {
-      path.states[i].first.time = path.states[i - 1].first.time;
-    }
-  }
-
-  void PadPlanResult(PlanResult<State, Action, int>& path,
-                     int required_len) {
+  void PadPlanResult(PlanResult<State, Action, int>& path, int required_len) {
     while (static_cast<int>(path.states.size()) < required_len) {
       auto back_state_copy = path.states.back();
       path.states.emplace_back(back_state_copy);
+      path.states.back().second++;
+      path.states.back().first.time++;
       path.actions.push_back({Action::Wait, 1});
       path.cost += 1;
     }

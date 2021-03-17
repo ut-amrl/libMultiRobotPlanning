@@ -384,22 +384,22 @@ class Environment {
   }
 
   void createConstraintsFromConflict(
-          const Conflict& conflict,
-          std::map<size_t, Constraints>& constraints) const {
+      const Conflict& conflict,
+      std::map<size_t, Constraints>& constraints) const {
     if (conflict.type == Conflict::Vertex) {
       Constraints c1;
       c1.vertexConstraints.emplace(
-              VertexConstraint(conflict.time, conflict.x1, conflict.y1));
+          VertexConstraint(conflict.time, conflict.x1, conflict.y1));
       constraints[conflict.agent1] = c1;
       constraints[conflict.agent2] = c1;
     } else if (conflict.type == Conflict::Edge) {
       Constraints c1;
       c1.edgeConstraints.emplace(EdgeConstraint(
-              conflict.time, conflict.x1, conflict.y1, conflict.x2, conflict.y2));
+          conflict.time, conflict.x1, conflict.y1, conflict.x2, conflict.y2));
       constraints[conflict.agent1] = c1;
       Constraints c2;
       c2.edgeConstraints.emplace(EdgeConstraint(
-              conflict.time, conflict.x2, conflict.y2, conflict.x1, conflict.y1));
+          conflict.time, conflict.x2, conflict.y2, conflict.x1, conflict.y1));
       constraints[conflict.agent2] = c2;
     }
   }

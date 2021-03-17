@@ -36,7 +36,8 @@ std::ostream& operator<<(std::ostream& os, const IndividualSpaceAction& a) {
 class IndividualSpaceEnvironment {
  public:
   IndividualSpaceEnvironment(size_t dimx, size_t dimy,
-                             std::unordered_set<Location> obstacles, Location goal)
+                             std::unordered_set<Location> obstacles,
+                             Location goal)
       : dimx_(dimx),
         dimy_(dimy),
         obstacles_(std::move(obstacles)),
